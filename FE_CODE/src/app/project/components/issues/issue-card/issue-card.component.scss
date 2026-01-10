@@ -18,6 +18,14 @@
   box-shadow: rgba(9, 30, 66, 0.25) 0px 1px 2px 0px;
 }
 
+.issue.issue-overdue {
+  @apply border-l-4 border-red-500;
+}
+
+.issue.issue-overdue:hover {
+  background-color: #fef2f2;
+}
+
 .issue:hover {
   @apply bg-backgroundLight;
 }

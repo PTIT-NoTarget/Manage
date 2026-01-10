@@ -65,6 +65,8 @@ export class AddIssueModalComponent implements OnInit {
       priority: [IssuePriority.HIGHEST],
       title: ['', NoWhitespaceValidator()],
       description: [''],
+      start_date: [null],
+      end_date: [null],
       reporterId: [''],
       userIds: [[]]
     });
@@ -88,14 +90,18 @@ export class AddIssueModalComponent implements OnInit {
     const accessToken = localStorage.getItem('accessToken');
     const userId = jwtDecode<JwtPayloadWithId>(accessToken!).id;
 
+    const startDateValue = this.issueForm.get('start_date')?.value;
+    const endDateValue = this.issueForm.get('end_date')?.value;
+
     const body: IAddATaskReq = {
       project_id: this.projectId!,
       name: this.issueForm.get('title')?.value,
       description: this.issueForm.get('description')?.value,
       label: this.issueForm.get('type')?.value,
       status: IssueStatus.BACKLOG,
-      start_date: null,
-      end_date: null,
+      priority: this.issueForm.get('priority')?.value,
+      start_date: startDateValue ? new Date(startDateValue).toISOString() : null,
+      end_date: endDateValue ? new Date(endDateValue).toISOString() : null,
       assigned_by: this.issueForm.get('reporterId')?.value
         ? Number(this.issueForm.get('reporterId')?.value)
         : null,
@@ -108,10 +114,8 @@ export class AddIssueModalComponent implements OnInit {
 
     await this.taskService
       .addATask(body)
-      .catch((data) => {
-        this.notiService.success();
-      })
-      .catch((err) => this.notiService.error());
+      .then(() => this.notiService.success())
+      .catch(() => this.notiService.error());
 
     // this._projectService.updateIssue(issue);
     this.closeModal();

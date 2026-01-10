@@ -20,6 +20,8 @@ import { IssueAssigneesSelectComponent } from './components/add-issue-modal/issu
 import { IssuePrioritySelectComponent } from './components/add-issue-modal/issue-priority-select/issue-priority-select.component';
 import { IssueReporterSelectComponent } from './components/add-issue-modal/issue-reporter-select/issue-reporter-select.component';
 import { IssueTypeSelectComponent } from './components/add-issue-modal/issue-type-select/issue-type-select.component';
+import { IssueStartDateSelectComponent } from './components/add-issue-modal/issue-start-date-select/issue-start-date-select.component';
+import { IssueEndDateSelectComponent } from './components/add-issue-modal/issue-end-date-select/issue-end-date-select.component';
 import { IssueUtilComponents } from './components/issues';
 import { NavigationComponents } from './components/navigation';
 import { ResizerComponent } from './components/navigation/resizer/resizer.component';
@@ -36,8 +38,10 @@ import { ProjectsModule } from './pages/projects/projects.module';
 import { SharedUserModule } from './components/user/user.module';
 import { SharedIssuesModule } from './components/issues/issues.module';
 import { SharedBoardModule } from './components/board/board.module';
-import { HeaderModule } from "./components/header/header.module";
+import { HeaderModule } from './components/header/header.module';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
+import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
+import { ImportTasksModalComponent } from './components/import-tasks-modal/import-tasks-modal.component';
 
 @NgModule({
   declarations: [
@@ -54,6 +58,9 @@ import { DashboardComponent } from './pages/dashboard/dashboard.component';
     IssuePrioritySelectComponent,
     IssueReporterSelectComponent,
     IssueAssigneesSelectComponent,
+    IssueStartDateSelectComponent,
+    IssueEndDateSelectComponent,
+    ImportTasksModalComponent,
     ResizerComponent,
     DashboardComponent
   ],
@@ -77,10 +84,11 @@ import { DashboardComponent } from './pages/dashboard/dashboard.component';
     ContentLoaderModule,
     QuillModule,
     NzInputModule,
+    NzDatePickerModule,
     SharedUserModule,
     SharedIssuesModule,
     SharedBoardModule,
     HeaderModule
-]
+  ]
 })
 export class ProjectModule {}

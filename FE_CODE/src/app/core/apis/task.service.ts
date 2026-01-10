@@ -26,6 +26,12 @@ export class TaskService {
       .toPromise();
   }
 
+  getMyTasks(body: IGetMyTaskReq): Promise<IGetAllTaskRes> {
+    return this.requestService
+      .jsonRequestWithLoading<IGetMyTaskReq>('POST', this.apiUrl + '/my', body)
+      .toPromise();
+  }
+
   addATask(body: IAddATaskReq): Promise<IAddATaskRes> {
     return this.requestService
       .jsonRequestWithLoading<IAddATaskReq>('POST', this.apiUrl + '/add', body)
@@ -37,6 +43,28 @@ export class TaskService {
       .jsonRequestWithLoading<IDeleteATaskReq>('DELETE', this.apiUrl + '/delete', body)
       .toPromise();
   }
+
+  importTasksFromExcel(body: IImportTasksReq): Promise<IImportTasksRes> {
+    const formData = new FormData();
+    formData.append('file', body.file);
+    formData.append('project_id', String(body.project_id));
+    formData.append('created_by', String(body.created_by));
+    return this.requestService
+      .formRequestWithLoading('POST', this.apiUrl + '/import', formData)
+      .toPromise();
+  }
+
+  downloadImportTemplate(projectId: number): Promise<Blob> {
+    return this.requestService
+      .getBlobRequestWithLoading(this.apiUrl + `/import-template/${projectId}`)
+      .toPromise()
+      .then((blob) => {
+        if (!blob) {
+          throw new Error('Download failed');
+        }
+        return blob;
+      });
+  }
 }
 
 export interface IGetAllTaskReq {
@@ -44,6 +72,16 @@ export interface IGetAllTaskReq {
   pageSize: number;
   project_id: number | null;
   assigned_by: number | null;
+}
+
+export interface IGetMyTaskReq {
+  page: number;
+  pageSize: number;
+  project_id?: number | null;
+  id?: number | null;
+  name?: string | null;
+  status?: string | null;
+  createdAt?: string | Date | null;
 }
 
 export interface IGetAllTaskRes {
@@ -82,6 +120,7 @@ export interface IAddATaskReq {
   description: string;
   label: string | null;
   status: string | null;
+  priority: IssuePriority | null;
   start_date: string | null;
   end_date: string | null;
   assigned_by: number | null;
@@ -110,6 +149,7 @@ export interface IUpdateATaskReq {
   description: string;
   label: string | null;
   status: string | null;
+  priority: IssuePriority | null;
   start_date: string | null;
   end_date: string | null;
   assigned_by: number | null;
@@ -117,4 +157,17 @@ export interface IUpdateATaskReq {
   story_point: number | null;
   user_update: number;
   follower_ids: number[] | null;
+}
+
+export interface IImportTasksReq {
+  file: File;
+  project_id: number;
+  created_by: number;
+}
+
+export interface IImportTasksRes {
+  success: boolean;
+  message: string;
+  created: { row: number; id: number }[];
+  errors: { row: number; message: string }[];
 }

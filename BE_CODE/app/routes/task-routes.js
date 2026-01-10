@@ -1,6 +1,7 @@
 const { verifyUser } = require("../middleware");
 const taskServices = require("../services/task-services");
 const { jwtAuth } = require("../middleware");
+const uploadExcel = require("../middleware/upload-excel");
 
 module.exports = function (app) {
   const apiUrl = "/api/task";
@@ -19,6 +20,9 @@ module.exports = function (app) {
   //get all task
   app.post(apiUrl + "/getAll", taskServices.getAllTasks);
 
+  //get my tasks (by token userId)
+  app.post(apiUrl + "/my", jwtAuth.verifyToken, taskServices.getMyTasks);
+
   //get task by id
   app.get(apiUrl + "/findById/:id", taskServices.getATaskById);
 
@@ -27,4 +31,17 @@ module.exports = function (app) {
 
   //delete task
   app.delete(apiUrl + "/delete", taskServices.deleteATask);
+
+  // import tasks from excel
+  app.post(
+    apiUrl + "/import",
+    uploadExcel.single("file"),
+    taskServices.importTasksFromExcel
+  );
+
+  // download excel template for import
+  app.get(
+    apiUrl + "/import-template/:projectId",
+    taskServices.downloadImportTemplate
+  );
 };

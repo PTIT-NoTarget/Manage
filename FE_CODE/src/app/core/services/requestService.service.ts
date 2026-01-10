@@ -22,7 +22,7 @@ export class RequestService {
   }*/
 
   /**
-   * {@link getJsonRequest}のローディングスピナー表示選択
+   * {@link getJsonRequest}
    * @param isLoading
    * @returns
    */
@@ -32,7 +32,7 @@ export class RequestService {
   }
 
   /**
-   * {@link getTextRequest}のローディングスピナー表示選択
+   * {@link getTextRequest}
    * @param isLoading
    * @returns
    */
@@ -42,7 +42,7 @@ export class RequestService {
   }
 
   /**
-   * {@link jsonRequest}のローディングスピナー表示選択
+   * {@link jsonRequest}
    * @param isLoading
    * @returns
    */
@@ -51,8 +51,18 @@ export class RequestService {
     return fn.bind(this) as typeof this.jsonRequest;
   }
 
+  formRequestWhetherLoading(isLoading: boolean) {
+    const fn = isLoading ? this.formRequestWithLoading : this.formRequest;
+    return fn.bind(this) as typeof this.formRequest;
+  }
+
+  getBlobRequestWhetherLoading(isLoading: boolean) {
+    const fn = isLoading ? this.getBlobRequestWithLoading : this.getBlobRequest;
+    return fn.bind(this) as typeof this.getBlobRequest;
+  }
+
   /**
-   * {@link textRequest}のローディングスピナー表示選択
+   * {@link textRequest}
    * @param isLoading
    * @returns
    */
@@ -62,9 +72,8 @@ export class RequestService {
   }
 
   /**
-   * GETリクエストを送信する(レスポンス形式:JSON)
-   * @param url リクエスト送信先URL
-   * @param params パラメータ(オプション)
+   * @param url
+   * @param params
    */
   getJsonRequest<T>(url: string, params: any[] = []): CustomObservable<T | null | undefined> {
     const fullUrl = this.concatParamsToUrl(url, params);
@@ -74,9 +83,9 @@ export class RequestService {
   }
 
   /**
-   * GETリクエストを送信する(レスポンス形式:TEXT)
-   * @param url リクエスト送信先URL
-   * @param params パラメータ(オプション)
+   *
+   * @param url
+   * @param params
    */
   getTextRequest(url: string, params: any[] = []): CustomObservable<string | null | undefined> {
     const fullUrl = this.concatParamsToUrl(url, params);
@@ -85,10 +94,20 @@ export class RequestService {
   }
 
   /**
-   * JSON形式のリクエストを送信する
+   * GET request for file download (Blob)
+   */
+  getBlobRequest(url: string, params: any[] = []): CustomObservable<Blob | null | undefined> {
+    const fullUrl = this.concatParamsToUrl(url, params);
+    const observable = this.http.get(fullUrl, { responseType: 'blob' }) as Observable<Blob>;
+    return CustomObservableLogic.transCustomObservable(observable);
+  }
+
+  /**
+   *
    * @param method "POST","PUT","DELETE","PATCH"
-   * @param url 送信先URL
-   * @param data 送信データ* @param params パラメータ(オプション)
+   * @param url
+   * @param data
+   * @param params
    */
   jsonRequest<T>(
     method: SupportedMethod,
@@ -121,11 +140,42 @@ export class RequestService {
   }
 
   /**
-   * TEXT形式のリクエストを送信する
+   * Multipart/FormData request (file upload etc). Do NOT set Content-Type manually.
+   */
+  formRequest(
+    method: SupportedMethod,
+    url: string,
+    data: FormData,
+    params: any[] = []
+  ): CustomObservable<any> {
+    const fullUrl = this.concatParamsToUrl(url, params);
+
+    let observable: Observable<any>;
+    switch (method) {
+      case 'POST':
+        observable = this.http.post(fullUrl, data);
+        break;
+      case 'PUT':
+        observable = this.http.put(fullUrl, data);
+        break;
+      case 'PATCH':
+        observable = this.http.patch(fullUrl, data);
+        break;
+      case 'DELETE':
+        // Not typical for multipart, but keep parity
+        observable = this.http.request('DELETE', fullUrl, { body: data });
+        break;
+    }
+
+    return CustomObservableLogic.transCustomObservable(observable);
+  }
+
+  /**
+   *
    * @param method "POST","PUT","DELETE","PATCH"
-   * @param url 送信先URL
-   * @param params パラメータ(オプション)
-   * @param text 送信テキスト(オプション)
+   * @param url
+   * @param params
+   * @param text
    */
   textRequest<T>(
     method: SupportedMethod,
@@ -158,9 +208,9 @@ export class RequestService {
   }
 
   /**
-   * GETリクエストを送信する(レスポンス形式:JSON)
-   * @param url リクエスト送信先URL
-   * @param params パラメータ(オプション)
+   *
+   * @param url
+   * @param params
    */
   getJsonRequestWithLoading<T>(
     url: string,
@@ -178,9 +228,9 @@ export class RequestService {
   }
 
   /**
-   * GETリクエストを送信する(レスポンス形式:TEXT)
-   * @param url リクエスト送信先URL
-   * @param params パラメータ(オプション)
+   *
+   * @param url
+   * @param params
    */
   getTextRequestWithLoading(
     url: string,
@@ -198,11 +248,28 @@ export class RequestService {
   }
 
   /**
-   * JSON形式のリクエストを送信する
+   * GET request for file download (Blob) with loading spinner
+   */
+  getBlobRequestWithLoading(
+    url: string,
+    params: any[] = []
+  ): CustomObservable<Blob | null | undefined> {
+    const fullUrl = this.concatParamsToUrl(url, params);
+    this.switchLoading(true);
+    const observable = (this.http.get(fullUrl, { responseType: 'blob' }) as Observable<Blob>).pipe(
+      tap(() => {
+        this.switchLoading(false);
+      })
+    );
+    return CustomObservableLogic.transCustomObservable(observable);
+  }
+
+  /**
+   *
    * @param method "POST","PUT","DELETE","PATCH"
-   * @param url 送信先URL
-   * @param data 送信データ
-   * @param params パラメータ(オプション)
+   * @param url
+   * @param data
+   * @param params
    */
   jsonRequestWithLoading<T>(
     method: SupportedMethod,
@@ -256,11 +323,58 @@ export class RequestService {
   }
 
   /**
-   * TEXT形式のリクエストを送信する
+   * Multipart/FormData request with loading spinner.
+   */
+  formRequestWithLoading(
+    method: SupportedMethod,
+    url: string,
+    data: FormData,
+    params: any[] = []
+  ): CustomObservable<any> {
+    const fullUrl = this.concatParamsToUrl(url, params);
+
+    let observable: Observable<any>;
+    this.switchLoading(true);
+    switch (method) {
+      case 'POST':
+        observable = this.http.post(fullUrl, data).pipe(
+          tap(() => {
+            this.switchLoading(false);
+          })
+        );
+        break;
+      case 'PUT':
+        observable = this.http.put(fullUrl, data).pipe(
+          tap(() => {
+            this.switchLoading(false);
+          })
+        );
+        break;
+      case 'PATCH':
+        observable = this.http.patch(fullUrl, data).pipe(
+          tap(() => {
+            this.switchLoading(false);
+          })
+        );
+        break;
+      case 'DELETE':
+        observable = this.http.request('DELETE', fullUrl, { body: data }).pipe(
+          tap(() => {
+            this.switchLoading(false);
+          })
+        );
+        break;
+    }
+
+    return CustomObservableLogic.transCustomObservable(observable);
+  }
+
+  /**
+   *
    * @param method "POST","PUT","DELETE","PATCH"
-   * @param url 送信先URL
-   * @param params パラメータ(オプション)
-   * @param text 送信テキスト(オプション)
+   * @param url
+   * @param params
+   * @param text
    */
   textRequestWithLoading<T>(
     method: SupportedMethod,
@@ -310,11 +424,11 @@ export class RequestService {
   }
 
   /**
-   * ファイルをアップロードする
-   * @param url APIのURL
-   * @param file フォームに入力されたファイル
-   * @param formName ↑フォームの名前(バックエンドで利用される)
-   * @param params APIのパラメータ
+   *
+   * @param url
+   * @param file
+   * @param formName
+   * @param params
    * @returns
    */
   uploadFileWithLoading<T = any>(
@@ -339,9 +453,9 @@ export class RequestService {
   }
 
   /**
-   * GETリクエストを送信する(レスポンス形式:JSON)
-   * @param url リクエスト送信先URL
-   * @param params パラメータ(オプション)
+   *
+   * @param url
+   * @param params
    */
   getJsonRequestLegacy<T>(url: string, params: any[] = []): Observable<T> {
     const fullUrl = this.concatParamsToUrl(url, params);
@@ -349,9 +463,9 @@ export class RequestService {
   }
 
   /**
-   * GETリクエストを送信する(レスポンス形式:TEXT)
-   * @param url リクエスト送信先URL
-   * @param params パラメータ(オプション)
+   *
+   * @param url
+   * @param params
    */
   getTextRequestLegacy(url: string, params: any[] = []): Observable<string> {
     const fullUrl = this.concatParamsToUrl(url, params);
@@ -359,11 +473,11 @@ export class RequestService {
   }
 
   /**
-   * JSON形式のリクエストを送信する
+   *
    * @param method "POST","PUT","DELETE","PATCH"
-   * @param url 送信先URL
-   * @param data 送信データ
-   * @param params パラメータ(オプション)
+   * @param url
+   * @param data
+   * @param params
    */
   jsonRequestLegacy<T>(
     method: SupportedMethod,
@@ -389,11 +503,11 @@ export class RequestService {
   }
 
   /**
-   * TEXT形式のリクエストを送信する
+   *
    * @param method "POST","PUT","DELETE","PATCH"
-   * @param url 送信先URL
-   * @param params パラメータ(オプション)
-   * @param text 送信テキスト(オプション)
+   * @param url
+   * @param params
+   * @param text
    */
   textRequestLegacy<T>(
     method: SupportedMethod,
@@ -419,9 +533,9 @@ export class RequestService {
   }
 
   /**
-   * GETリクエストを送信する(レスポンス形式:JSON)
-   * @param url リクエスト送信先URL
-   * @param params パラメータ(オプション)
+   *
+   * @param url
+   * @param params
    */
   getJsonRequestWithLoadingLegacy<T>(url: string, params: any[] = []): Observable<T> {
     const fullUrl = this.concatParamsToUrl(url, params);
@@ -434,9 +548,9 @@ export class RequestService {
   }
 
   /**
-   * GETリクエストを送信する(レスポンス形式:TEXT)
-   * @param url リクエスト送信先URL
-   * @param params パラメータ(オプション)
+   *
+   * @param url
+   * @param params
    */
   getTextRequestWithLoadingLegacy(url: string, params: any[] = []): Observable<string> {
     const fullUrl = this.concatParamsToUrl(url, params);
@@ -449,11 +563,11 @@ export class RequestService {
   }
 
   /**
-   * JSON形式のリクエストを送信する
+   *
    * @param method "POST","PUT","DELETE","PATCH"
-   * @param url 送信先URL
-   * @param data 送信データ
-   * @param params パラメータ(オプション)
+   * @param url
+   * @param data
+   * @param params
    */
   jsonRequestWithLoadingLegacy<T>(
     method: SupportedMethod,
@@ -496,11 +610,11 @@ export class RequestService {
   }
 
   /**
-   * TEXT形式のリクエストを送信する
+   *
    * @param method "POST","PUT","DELETE","PATCH"
-   * @param url 送信先URL
-   * @param params パラメータ(オプション)
-   * @param text 送信テキスト(オプション)
+   * @param url
+   * @param params
+   * @param text
    */ textRequestWithLoadingLegacy<T>(
     method: SupportedMethod,
     url: string,
@@ -542,12 +656,12 @@ export class RequestService {
   }
 
   /**
-   * JSON形式のリクエストを送信する
-   * ファイルをダウンロードする際に利用
+   *
+   *
    * @param method "POST","PUT","DELETE","PATCH"
-   * @param url 送信先URL
-   * @param data 送信データ
-   * @param params パラメータ(オプション)
+   * @param url
+   * @param data
+   * @param params
    */
   fileRequest<T>(
     method: SupportedMethod,
@@ -574,14 +688,12 @@ export class RequestService {
   }
 
   /**
-   * ローディングスピナーの非表示/表示を切り替える
-   * @param mode (true: 表示, false: 非表示)
+   * @param mode
    */
   private switchLoading(mode: boolean) {
     this.store.setLoading(mode);
   }
 
-  /**　パラメータをURLに結合する */
   private concatParamsToUrl(url: string, params: any[]): string {
     return url + '/' + params.map((p) => encodeURIComponent(p)).join('/');
   }

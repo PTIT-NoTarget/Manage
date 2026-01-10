@@ -3,6 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import { IGetAProjectRes, ProjectsService } from '@tungle/core/apis/projects.service';
 import { IGetAllTaskReq, IGetAllTaskRes, TaskService } from '@tungle/core/apis/task.service';
 import { AddIssueModalComponent } from '@tungle/project/components/add-issue-modal/add-issue-modal.component';
+import { ImportTasksModalComponent } from '@tungle/project/components/import-tasks-modal/import-tasks-modal.component';
 import { ProjectService } from '@tungle/project/state/project/project.service';
 import { NzModalService } from 'ng-zorro-antd/modal';
 
@@ -64,6 +65,21 @@ export class ProjectsDetailComponent implements OnInit {
       }
     });
     modal.afterClose.subscribe((data) => {
+      this._projectService.getProjectDetail(this.projectId!);
+    });
+  }
+
+  showImportModal(): void {
+    const modal = this.nzModalService.create({
+      nzContent: ImportTasksModalComponent,
+      nzCentered: true,
+      nzFooter: null,
+      nzClosable: false,
+      nzComponentParams: {
+        projectId: this.projectId
+      }
+    });
+    modal.afterClose.subscribe(() => {
       this._projectService.getProjectDetail(this.projectId!);
     });
   }

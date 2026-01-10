@@ -1,0 +1,50 @@
+.date-label {
+  margin-top: -3px;
+  font-weight: 500;
+}
+
+:host {
+  ::ng-deep .date-picker-button {
+    width: 100%;
+
+    .ant-picker {
+      border: 1px solid #dfe1e6;
+      border-radius: 3px;
+      background-color: #fafbfc;
+      transition: background 0.1s;
+      cursor: pointer;
+      height: 32px;
+
+      &:hover {
+        background-color: #ebecf0;
+      }
+
+      .ant-picker-input {
+        input {
+          cursor: pointer;
+          font-weight: 500;
+          color: #172b4d;
+
+          &::placeholder {
+            color: #172b4d;
+            font-weight: 500;
+          }
+        }
+      }
+    }
+
+    &.overdue .ant-picker {
+      border-color: #cd1317;
+      background-color: #fff5f5;
+
+      &:hover {
+        background-color: #ffe9e9;
+      }
+
+      .ant-picker-input input,
+      .ant-picker-input input::placeholder {
+        color: #cd1317;
+      }
+    }
+  }
+}

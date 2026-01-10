@@ -12,6 +12,8 @@ import { IssueAssigneesComponent } from './issue-assignees/issue-assignees.compo
 import { IssueReporterComponent } from './issue-reporter/issue-reporter.component';
 import { IssueCommentComponent } from './issue-comment/issue-comment.component';
 import { IssueDeleteModalComponent } from './issue-delete-modal/issue-delete-modal.component';
+import { IssueStartDateComponent } from './issue-start-date/issue-start-date.component';
+import { IssueEndDateComponent } from './issue-end-date/issue-end-date.component';
 
 export const IssueUtilComponents = [
   IssueCardComponent,
@@ -27,5 +29,7 @@ export const IssueUtilComponents = [
   IssueStatusComponent,
   IssueCommentsComponent,
   IssueCommentComponent,
-  IssueDeleteModalComponent
+  IssueDeleteModalComponent,
+  IssueStartDateComponent,
+  IssueEndDateComponent
 ];

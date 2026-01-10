@@ -76,6 +76,7 @@ export class ProjectService {
         description: issue.description,
         label: issue.type,
         status: issue.status,
+        priority: issue.priority,
         start_date: issue.startDate,
         end_date: issue.endDate,
         assigned_by: issue.reporterId,
@@ -159,7 +160,7 @@ export class ProjectService {
             page: 1,
             pageSize: 9999,
             project_id: Number(project.id),
-            assigned_by: userId ? userId : null,
+            assigned_by: userId ? userId : null
           };
           return this._http.post<IGetAllTaskRes>(`${this.baseUrl1}/api/task/getAll`, body).pipe(
             tap((data) => {

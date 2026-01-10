@@ -8,7 +8,7 @@ import { ExcelService, IExcelCol } from '@tungle/core/apis/excel.service';
 import { NotiService } from '@tungle/core/services/noti.service';
 import { TaskService } from '@tungle/core/apis/task.service';
 import { AuthQuery } from '@tungle/project/auth/auth.query';
-import { take } from 'rxjs';
+import { firstValueFrom, take } from 'rxjs';
 import { IssueStatusDisplay } from '@tungle/interface/issue';
 import {
   IGetAllProjectReq,
@@ -27,6 +27,8 @@ import { ProjectQuery } from '@tungle/project/state/project/project.query';
 export class MyWorksComponent implements OnInit {
   totalCount!: number;
 
+  private currentUser: JUser | null = null;
+
   listOfColumn = [
     {
       title: 'ID',
@@ -35,12 +37,7 @@ export class MyWorksComponent implements OnInit {
     },
     {
       title: 'Tên',
-      compare: (a: ItemData, b: ItemData) => a.title.localeCompare(b.title),
-      priority: false
-    },
-    {
-      title: 'Người phụ trách',
-      compare: (a: ItemData, b: ItemData) => a.reporterName.localeCompare(b.reporterName),
+      compare: (a: ItemData, b: ItemData) => a.name.localeCompare(b.name),
       priority: false
     },
     {
@@ -54,25 +51,15 @@ export class MyWorksComponent implements OnInit {
       priority: false
     },
     {
-      title: 'Ngày tạo',
-      compare: (a: ItemData, b: ItemData) => a.createdAt.localeCompare(b.createdAt),
+      title: 'Ngày bắt đầu',
+      compare: (a: ItemData, b: ItemData) => a.startDate.localeCompare(b.startDate),
+      priority: false
+    },
+    {
+      title: 'Deadline',
+      compare: (a: ItemData, b: ItemData) => a.endDate.localeCompare(b.endDate),
       priority: false
     }
-    // {
-    //   title: 'Ngày bắt đầu',
-    //   compare: (a: ItemData, b: ItemData) => a.startDate.localeCompare(b.startDate),
-    //   priority: false
-    // },
-    // {
-    //   title: 'Ngày kết thúc',
-    //   compare: (a: ItemData, b: ItemData) => a.endDate.localeCompare(b.endDate),
-    //   priority: false
-    // },
-    // {
-    //   title: 'Thao tác',
-    //   compare: null,
-    //   priority: false
-    // }
   ];
 
   listOfData: ItemData[] = [];
@@ -81,10 +68,9 @@ export class MyWorksComponent implements OnInit {
     page: new FormControl(1),
     pageSize: new FormControl(10),
     id: new FormControl(),
-    title: new FormControl(),
-    assigned_by: new FormControl(),
+    name: new FormControl(),
     createdAt: new FormControl(),
-    status: new FormControl(),
+    status: new FormControl()
   });
 
   users: JUser[] = [];
@@ -111,37 +97,43 @@ export class MyWorksComponent implements OnInit {
   ) {}
 
   async ngOnInit() {
-    await this.getAllProjects();
+    const user = await firstValueFrom(this.authQuery.user$);
+    this.currentUser = user;
+    await this.fetchAllProjects(user.id);
     await this.getAllTasks();
   }
 
   async getAllTasks() {
-    this.authQuery.user$.subscribe(async (user) => {
-      this.form.patchValue({
-        assigned_by: user.id
-      });
-      const res = await this.taskService.getAllTasks(this.form.getRawValue());
-      this.totalCount = res.totalItems;
-
-      this.listOfData = res.issues.map((item) => {
-        const rec: ItemData = {
-          id: item.id,
-          title: item.title,
-          status: IssueStatusDisplay[item.status],
-          reporterName: user?.fullName,
-          projectId: item.projectId,
-          projectName:
-            this.projects?.projects.find((project) => project.id === item.projectId)?.name ?? '',
-          createdAt: item.createdAt ?? '',
-          startDate: item.startDate ?? '',
-          endDate: item.endDate ?? ''
-        };
-
-        return rec;
-      });
-
-      this.cdr.detectChanges();
+    const raw = this.form.getRawValue();
+    const res = await this.taskService.getMyTasks({
+      page: raw.page ?? 1,
+      pageSize: raw.pageSize ?? 10,
+      id: raw.id ?? null,
+      name: raw.name ?? null,
+      status: raw.status ?? null,
+      createdAt: raw.createdAt ?? null
     });
+
+    this.totalCount = res.totalItems;
+
+    this.listOfData = res.issues.map((item) => {
+      const rec: ItemData = {
+        id: item.id,
+        name: item.title,
+        status: IssueStatusDisplay[item.status],
+        reporterName: this.currentUser?.fullName ?? '',
+        projectId: item.projectId,
+        projectName:
+          this.projects?.projects.find((project) => project.id === item.projectId)?.name ?? '',
+        createdAt: item.createdAt ?? '',
+        startDate: item.startDate ?? '',
+        endDate: item.endDate ?? ''
+      };
+
+      return rec;
+    });
+
+    this.cdr.detectChanges();
   }
 
   cancel() {
@@ -194,15 +186,18 @@ export class MyWorksComponent implements OnInit {
   }
 
   async getAllProjects() {
-    this.authQuery.user$.subscribe(async (user) => {
-      const body: IGetAllProjectReq = {
-        page: 1,
-        pageSize: 9999,
-        userId: user.id
-      };
-      this.projects = await this.projectsService.getAllProject(body);
-      this.cdr.detectChanges();
-    });
+    const user = this.currentUser ?? (await firstValueFrom(this.authQuery.user$));
+    await this.fetchAllProjects(user.id);
+  }
+
+  private async fetchAllProjects(userId: number) {
+    const body: IGetAllProjectReq = {
+      page: 1,
+      pageSize: 9999,
+      userId
+    };
+    this.projects = await this.projectsService.getAllProject(body);
+    this.cdr.detectChanges();
   }
 
   async openIssueModal(projectId: number, issueId: number) {
@@ -223,15 +218,14 @@ export class MyWorksComponent implements OnInit {
   }
 
   async getGroupProjectDetail(projectId: number) {
-    this.authQuery.user$.subscribe(async (user) => {
-      this._projectService.getProjectDetail(projectId, user.id);
-    });
+    const user = this.currentUser ?? (await firstValueFrom(this.authQuery.user$));
+    this._projectService.getProjectDetail(projectId, user.id);
   }
 }
 
 interface ItemData {
   id: number;
-  title: string;
+  name: string;
   status: string;
   reporterName: string;
   projectId?: number;

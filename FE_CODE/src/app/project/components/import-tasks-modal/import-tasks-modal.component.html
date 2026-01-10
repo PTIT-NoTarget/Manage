@@ -1,0 +1,45 @@
+<div class="px-8 py-5">
+  <div class="flex items-center py-3 text-textDarkest">
+    <div class="text-xl">Import công việc từ Excel</div>
+    <div class="flex-auto"></div>
+    <j-button icon="times" [iconSize]="24" (click)="close()" [className]="'btn-empty'"></j-button>
+  </div>
+
+  <div class="form-group">
+    <label class="label">File Excel</label>
+
+    <input
+      id="taskImportFile"
+      class="hidden"
+      type="file"
+      accept=".xlsx,.xls"
+      (change)="onFileSelected($event)"
+    />
+
+    <label class="dropzone" for="taskImportFile">
+      <div class="dropzone__title">Kéo thả file vào đây</div>
+      <div class="dropzone__sub">hoặc bấm để chọn file (.xlsx, .xls)</div>
+    </label>
+
+    <div class="file-chip" *ngIf="selectedFile">
+      <div class="file-chip__name" title="{{ selectedFile.name }}">{{ selectedFile.name }}</div>
+      <div class="file-chip__meta">{{ selectedFile.size / 1024 / 1024 | number: '1.1-1' }} MB</div>
+      <div class="flex-auto"></div>
+      <label class="file-chip__action" for="taskImportFile">Đổi file</label>
+    </div>
+  </div>
+
+  <div class="mt-5 form-group form-action">
+    <j-button className="btn-empty mr-2" [disabled]="isSubmitting" (click)="downloadTemplate()">
+      Tải file mẫu
+    </j-button>
+    <j-button
+      className="btn-primary mr-2"
+      [disabled]="!selectedFile || isSubmitting"
+      (click)="submit()"
+    >
+      {{ isSubmitting ? 'Đang import...' : 'Import' }}
+    </j-button>
+    <j-button className="btn-empty" (click)="close()">Đóng</j-button>
+  </div>
+</div>

@@ -7,7 +7,7 @@ import {
   SimpleChanges
 } from '@angular/core';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
-import { JIssue } from '@tungle/interface/issue';
+import { IssueStatus, JIssue } from '@tungle/interface/issue';
 import { IssuePriorityIcon } from '@tungle/interface/issue-priority-icon';
 import { JUser } from '@tungle/interface/user';
 import { ProjectQuery } from '@tungle/project/state/project/project.query';
@@ -30,6 +30,8 @@ export class IssueCardComponent implements OnChanges, OnInit {
   issueTypeIcon: string = '';
   priorityIcon: IssuePriorityIcon | undefined;
   members: JUser[] = [];
+
+  readonly IssueStatus = IssueStatus;
 
   constructor(
     private _projectQuery: ProjectQuery,
@@ -64,7 +66,7 @@ export class IssueCardComponent implements OnChanges, OnInit {
       nzClosable: false,
       nzFooter: null,
       nzComponentParams: {
-        issue$: this._projectQuery.issueById$(issueId),
+        issue$: this._projectQuery.issueById$(issueId)
       }
     });
   }
@@ -94,5 +96,35 @@ export class IssueCardComponent implements OnChanges, OnInit {
     }
     const member = this.members.find((item) => item.id === userId)!;
     return member;
+  }
+
+  isOverdue(issue: JIssue | undefined): boolean {
+    if (!issue?.endDate) {
+      return false;
+    }
+
+    if (issue.status === IssueStatus.DONE) {
+      return false;
+    }
+
+    const end = this.parseEndDate(issue.endDate);
+    if (!end) {
+      return false;
+    }
+
+    return end.getTime() < Date.now();
+  }
+
+  private parseEndDate(value: string): Date | null {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return null;
+    }
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      date.setHours(23, 59, 59, 999);
+    }
+
+    return date;
   }
 }

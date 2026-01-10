@@ -1,0 +1,16 @@
+<div class="mt-6 mb-1 uppercase text-textMedium text-13 font-bold">Deadline</div>
+<nz-date-picker
+  class="date-picker-button"
+  [ngModel]="selectedDate"
+  (ngModelChange)="updateDate($event)"
+  [nzFormat]="'dd/MM/yyyy'"
+  [nzShowToday]="true"
+  [nzAllowClear]="true"
+  [nzPlaceHolder]="displayDate"
+  [nzSuffixIcon]="suffixTemplate"
+  [class.overdue]="isOverdue()"
+>
+</nz-date-picker>
+<ng-template #suffixTemplate>
+  <svg-icon name="calendar" [size]="20" [style.color]="iconColor"></svg-icon>
+</ng-template>

@@ -19,6 +19,7 @@ import { SharedUserModule } from '../user/user.module';
 import { QuillModule } from 'ngx-quill';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
+import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
 
 @NgModule({
   declarations: [IssueUtilComponents],
@@ -46,7 +47,8 @@ import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
     SharedUserModule,
     QuillModule,
     NzInputModule,
-    NzPopconfirmModule
+    NzPopconfirmModule,
+    NzDatePickerModule
   ],
   exports: [IssueUtilComponents]
 })

@@ -1,0 +1,52 @@
+.form-action {
+  text-align: right;
+}
+
+.dropzone {
+  @apply flex flex-col items-center justify-center w-full rounded-sm border border-dashed border-textLight;
+  @apply bg-backgroundLightest text-textMedium cursor-pointer select-none;
+  padding: 18px 16px;
+  transition: background-color 120ms ease, border-color 120ms ease;
+
+  &:hover {
+    @apply bg-backgroundLight;
+    border-color: rgba(0, 82, 204, 0.35);
+  }
+}
+
+.dropzone__title {
+  @apply text-textDarkest font-medium;
+  font-size: 14px;
+}
+
+.dropzone__sub {
+  @apply text-textMedium;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.file-chip {
+  @apply mt-3 flex items-center rounded-sm bg-backgroundLightest;
+  border: 1px solid rgba(9, 30, 66, 0.14);
+  padding: 10px 12px;
+}
+
+.file-chip__name {
+  @apply text-textDarkest;
+  font-size: 13px;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-chip__meta {
+  @apply text-textMedium;
+  font-size: 12px;
+  margin-left: 10px;
+}
+
+.file-chip__action {
+  @apply text-primary cursor-pointer;
+  font-size: 12px;
+}
