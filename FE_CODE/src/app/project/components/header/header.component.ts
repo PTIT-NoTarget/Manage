@@ -1,24 +1,18 @@
-import {
-  ChangeDetectorRef,
-  Component,
-  EventEmitter,
-  Input,
-  OnInit,
-  Output,
-  inject
-} from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '@tungle/core/apis/auth.service';
-import {
-  IGetAllNotiReq,
-  IGetAllNotiRes,
-  INoti,
-  NotificationService
-} from '@tungle/core/apis/notification.service';
+import { IGetAllNotiReq, INoti, NotificationService } from '@tungle/core/apis/notification.service';
+import { TaskService } from '@tungle/core/apis/task.service';
 import { AuthQuery } from '@tungle/project/auth/auth.query';
 import { NzModalService } from 'ng-zorro-antd/modal';
 import { jwtDecode } from 'jwt-decode';
 import { JwtPayloadWithId } from '@tungle/project/auth/auth.service';
+import { IssueModalComponent } from '../issues/issue-modal/issue-modal.component';
+import { ProjectService } from '@tungle/project/state/project/project.service';
+import { ProjectQuery } from '@tungle/project/state/project/project.query';
+import { from, of } from 'rxjs';
+import { catchError, map, switchMap, take, tap } from 'rxjs/operators';
+import { JIssue } from '@tungle/interface/issue';
 
 @Component({
   selector: 'app-header',
@@ -33,7 +27,11 @@ export class HeaderComponent implements OnInit {
     private cdr: ChangeDetectorRef,
     public authQuery: AuthQuery,
     private authService: AuthService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private modalService: NzModalService,
+    private projectService: ProjectService,
+    private projectQuery: ProjectQuery,
+    private taskService: TaskService
   ) {}
 
   async ngOnInit() {
@@ -74,6 +72,65 @@ export class HeaderComponent implements OnInit {
 
   sendNotification(data: INoti) {
     this.notificationService.sendTaskNotification(data);
+  }
+
+  async openNotiDetail(item: INoti) {
+    // 1) mark as seen
+    if (!item.seen) {
+      item.seen = true;
+      this.totalCountNoti = this.listNoti.filter((x) => x.seen === false).length;
+      this.cdr.detectChanges();
+
+      try {
+        await this.notificationService.updateANoti({ id: item.id, seen: true });
+      } catch {
+        // ignore API errors (optimistic UI)
+      }
+    }
+
+    // 2) open task modal if metadata includes ids
+    let metadata: any = null;
+    try {
+      metadata = item.metadata ? JSON.parse(item.metadata) : null;
+    } catch {
+      metadata = null;
+    }
+
+    const taskId = Number(metadata?.taskId ?? metadata?.task_id);
+    const projectId = Number(metadata?.projectId ?? metadata?.project_id);
+
+    if (!taskId || !projectId) {
+      return;
+    }
+
+    const issue$ = this.projectQuery.issueById$(taskId).pipe(
+      take(1),
+      switchMap((issue) => {
+        if (issue) {
+          return of(issue);
+        }
+
+        return from(this.taskService.findById(taskId)).pipe(
+          map((task) => task as unknown as JIssue),
+          tap((fetched) => {
+            if (fetched) {
+              this.projectService.upsertIssueToStore(fetched);
+            }
+          }),
+          catchError(() => of(undefined))
+        );
+      })
+    );
+
+    this.modalService.create({
+      nzContent: IssueModalComponent,
+      nzWidth: 1040,
+      nzClosable: false,
+      nzFooter: null,
+      nzComponentParams: {
+        issue$
+      }
+    });
   }
 
   logOut() {

@@ -53,6 +53,12 @@ export class NotificationService {
       .jsonRequestWithLoading<any>('DELETE', this.apiUrl + '/delete', body)
       .toPromise();
   }
+
+  updateANoti(body: IUpdateNotiReq): Promise<any> {
+    return this.requestService
+      .jsonRequestWithLoading<IUpdateNotiReq>('PUT', this.apiUrl + '/update', body)
+      .toPromise();
+  }
 }
 
 export interface IGetAllNotiReq {
@@ -78,4 +84,13 @@ export interface INoti {
   metadata: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface IUpdateNotiReq {
+  id: number;
+  seen?: boolean;
+  title?: string;
+  message?: string;
+  metadata?: string;
+  user_id?: number;
 }

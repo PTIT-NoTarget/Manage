@@ -65,6 +65,41 @@ export class TaskService {
         return blob;
       });
   }
+
+  findById(id: number): Promise<IFindTaskByIdRes> {
+    return this.requestService
+      .getJsonRequestWithLoading<IFindTaskByIdRes>(this.apiUrl + '/findById', [id])
+      .toPromise()
+      .then((res) => {
+        if (!res) {
+          throw new Error('Task not found');
+        }
+        return res;
+      });
+  }
+}
+
+export interface IFindTaskByIdRes {
+  id: number;
+  title: string;
+  type: IssueType;
+  status: IssueStatus;
+  priority: IssuePriority;
+  listPosition: number;
+  description: string;
+  estimate: number | null;
+  timeSpent: number | null;
+  timeRemaining: number | null;
+  createdAt: string;
+  updatedAt: string;
+  reporterId: number;
+  userIds: number[];
+  comments: any[];
+  projectId: number;
+  startDate: string | null;
+  endDate: string | null;
+  createdBy: number;
+  storyPoint: number | null;
 }
 
 export interface IGetAllTaskReq {

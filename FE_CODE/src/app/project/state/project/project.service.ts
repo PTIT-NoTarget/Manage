@@ -119,6 +119,16 @@ export class ProjectService {
     });
   }
 
+  upsertIssueToStore(issue: JIssue) {
+    this._store.update((state) => {
+      const issues = arrayUpsert(state.issues, issue.id, issue);
+      return {
+        ...state,
+        issues
+      };
+    });
+  }
+
   deleteIssue(issueId: number) {
     this._store.update((state) => {
       const issues = arrayRemove(state.issues, issueId);

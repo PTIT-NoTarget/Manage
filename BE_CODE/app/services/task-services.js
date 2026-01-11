@@ -7,6 +7,10 @@ const Notification = database.notification;
 const { Op } = require("sequelize");
 const XLSX = require("xlsx");
 const ExcelJS = require("exceljs");
+const {
+  sendTelegramMessage,
+  escapeTelegramHtml,
+} = require("./telegram-notifier");
 
 const safeParseJsonArray = (value) => {
   try {
@@ -316,7 +320,7 @@ exports.addATask = async (req, res) => {
       follower_ids: JSON.stringify(req.body.follower_ids || []),
     };
 
-    await Task.create(body);
+    const task = await Task.create(body);
 
     // Lấy thông tin user
     const user = await User.findByPk(body.created_by);
@@ -326,10 +330,24 @@ exports.addATask = async (req, res) => {
       title: ``,
       message: `${user.dataValues.fullName} vừa tạo mới công việc "${body.name}"`,
       seen: false,
-      metadata: "",
+      metadata: JSON.stringify({
+        type: "TASK_CREATED",
+        taskId: task.id,
+        projectId: body.project_id,
+        taskName: body.name,
+      }),
     };
 
     await Notification.create(notiBody);
+
+    // Telegram notification (optional via env)
+    if (user) {
+      await sendTelegramMessage(
+        `<b>${escapeTelegramHtml(
+          user.dataValues.fullName
+        )}</b> vừa tạo mới công việc <b>${escapeTelegramHtml(body.name)}</b>`
+      );
+    }
 
     // Gửi thông báo
     io.emit("taskNotification", notiBody);
@@ -415,6 +433,8 @@ exports.updateATask = async (req, res) => {
       follower_ids: JSON.stringify(req.body.follower_ids || []),
     };
 
+    const prevStatus = task.dataValues.status;
+
     // Lấy thông tin user
     const user = await User.findByPk(body.user_update);
 
@@ -425,11 +445,12 @@ exports.updateATask = async (req, res) => {
     if (req.body.assigned_by && req.body.assigned_by !== req.body.user_update) {
       // metadata noti update status task
       const metadataTaskStatus = {
-        prevStatus: task.dataValues.status,
+        prevStatus: prevStatus,
         currentStatus: body.status,
         nameUserUpdate: user.dataValues.fullName,
         taskId: req.body.id,
         taskName: task.dataValues.name,
+        projectId: task.dataValues.project_id,
       };
       // Lưu thông báo vào DB
       const notiBody = {
@@ -441,6 +462,19 @@ exports.updateATask = async (req, res) => {
       };
 
       await Notification.create(notiBody);
+
+      // Telegram notification (optional via env)
+      if (user) {
+        await sendTelegramMessage(
+          `<b>${escapeTelegramHtml(
+            user.dataValues.fullName
+          )}</b> đã cập nhật trạng thái công việc <b>${escapeTelegramHtml(
+            task.dataValues.name
+          )}</b> (${escapeTelegramHtml(prevStatus)} → ${escapeTelegramHtml(
+            body.status
+          )})`
+        );
+      }
 
       // Gửi thông báo
       io.emit("taskNotification", notiBody);
@@ -553,6 +587,10 @@ exports.importTasksFromExcel = async (req, res) => {
 
     const errors = [];
     const created = [];
+    const notiQueue = [];
+
+    const creatorUser = await User.findByPk(createdBy);
+    const creatorName = creatorUser?.dataValues?.fullName || "";
 
     for (let index = 0; index < rows.length; index++) {
       const row = rows[index] || {};
@@ -634,6 +672,34 @@ exports.importTasksFromExcel = async (req, res) => {
           { transaction }
         );
         created.push({ row: index + 2, id: newTask.id });
+
+        const notiBody = {
+          user_id: 0,
+          title: ``,
+          message: `${creatorName} vừa import công việc "${newTask.name}"`,
+          seen: false,
+          metadata: JSON.stringify({
+            type: "TASK_IMPORTED",
+            taskId: newTask.id,
+            projectId: newTask.project_id,
+            taskName: newTask.name,
+          }),
+        };
+
+        await Notification.create(notiBody, { transaction });
+
+        notiQueue.push({
+          notiBody,
+          telegramHtml: creatorName
+            ? `<b>${escapeTelegramHtml(
+                creatorName
+              )}</b> vừa import công việc <b>${escapeTelegramHtml(
+                newTask.name
+              )}</b>`
+            : `<b>Import</b> vừa tạo công việc <b>${escapeTelegramHtml(
+                newTask.name
+              )}</b>`,
+        });
       } catch (e) {
         errors.push({
           row: index + 2,
@@ -643,6 +709,12 @@ exports.importTasksFromExcel = async (req, res) => {
     }
 
     await transaction.commit();
+
+    for (const item of notiQueue) {
+      io.emit("taskNotification", item.notiBody);
+      sendTelegramMessage(item.telegramHtml);
+    }
+
     return res.status(200).json({
       success: true,
       message: `Imported ${created.length} task(s)`,

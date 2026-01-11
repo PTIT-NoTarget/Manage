@@ -60,6 +60,7 @@ export class IssueCardComponent implements OnChanges, OnInit {
   }
 
   openIssueModal(issueId: number) {
+    console.log('Opening issue modal for issue ID:', issueId);
     this._modalService.create({
       nzContent: IssueModalComponent,
       nzWidth: 1040,
