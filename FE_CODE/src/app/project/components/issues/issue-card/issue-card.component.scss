@@ -29,3 +29,12 @@
 .issue:hover {
   @apply bg-backgroundLight;
 }
+
+.issue.issue-readonly {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.issue.issue-readonly:hover {
+  @apply bg-white;
+}

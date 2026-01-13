@@ -10,6 +10,7 @@ import { ProjectService } from '@tungle/project/state/project/project.service';
 })
 export class IssueTitleComponent implements OnChanges {
   @Input() issue: JIssue | undefined;
+  @Input() readOnly: boolean = false;
   titleControl: FormControl = new FormControl('');
 
   constructor(private _projectService: ProjectService) {}
@@ -22,6 +23,10 @@ export class IssueTitleComponent implements OnChanges {
   }
 
   onBlur() {
+    if (this.readOnly) {
+      return;
+    }
+
     this._projectService.updateIssue({
       ...this.issue!,
       title: this.titleControl.value

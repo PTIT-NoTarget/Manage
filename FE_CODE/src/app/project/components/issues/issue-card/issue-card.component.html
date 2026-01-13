@@ -1,25 +1,32 @@
 <div class="issue-wrap">
-  <div (click)="openIssueModal(issue?.id!)" class="issue" [class.issue-overdue]="isOverdue(issue)">
+  <div
+    (click)="openIssueModal(issue?.id!)"
+    class="issue"
+    [class.issue-overdue]="isOverdue(issue)"
+    [class.issue-readonly]="readOnly"
+  >
     <div class="flex justify-between mb-2">
       <div></div>
-      <a nz-dropdown [nzDropdownMenu]="menu">
-        <span class="cursor-pointer" nz-icon nzType="ellipsis" nzTheme="outline"></span>
-      </a>
-      <nz-dropdown-menu #menu="nzDropdownMenu">
-        <ul nz-menu nzSelectable>
-          <li nz-menu-item>
-            <a
-              nz-popconfirm
-              nzPopconfirmTitle="Bán có chắc xóa công việc?"
-              nzOkText="Xóa"
-              nzCancelText="Hủy"
-              (nzOnConfirm)="deleteTask(issue?.id!)"
-            >
-              Xóa công việc
-            </a>
-          </li>
-        </ul>
-      </nz-dropdown-menu>
+      <ng-container *ngIf="!readOnly">
+        <a nz-dropdown [nzDropdownMenu]="menu">
+          <span class="cursor-pointer" nz-icon nzType="ellipsis" nzTheme="outline"></span>
+        </a>
+        <nz-dropdown-menu #menu="nzDropdownMenu">
+          <ul nz-menu nzSelectable>
+            <li nz-menu-item>
+              <a
+                nz-popconfirm
+                nzPopconfirmTitle="Bán có chắc xóa công việc?"
+                nzOkText="Xóa"
+                nzCancelText="Hủy"
+                (nzOnConfirm)="deleteTask(issue?.id!)"
+              >
+                Xóa công việc
+              </a>
+            </li>
+          </ul>
+        </nz-dropdown-menu>
+      </ng-container>
     </div>
     <p
       class="pb-3 text-15"

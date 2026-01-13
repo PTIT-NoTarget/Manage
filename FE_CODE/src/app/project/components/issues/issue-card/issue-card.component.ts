@@ -26,6 +26,7 @@ import { ProjectService } from '@tungle/project/state/project/project.service';
 @UntilDestroy()
 export class IssueCardComponent implements OnChanges, OnInit {
   @Input() issue: JIssue | undefined;
+  @Input() readOnly: boolean = false;
   assignees: (JUser | undefined)[] = [];
   issueTypeIcon: string = '';
   priorityIcon: IssuePriorityIcon | undefined;
@@ -67,12 +68,18 @@ export class IssueCardComponent implements OnChanges, OnInit {
       nzClosable: false,
       nzFooter: null,
       nzComponentParams: {
-        issue$: this._projectQuery.issueById$(issueId)
+        issue$: this._projectQuery.issueById$(issueId),
+        readOnly: this.readOnly
       }
     });
   }
 
   async deleteTask(id: number) {
+    if (this.readOnly) {
+      this.notiService.warning('Bạn không có quyền xóa công việc này');
+      return;
+    }
+
     const body: IDeleteATaskReq = {
       id: Number(id)
     };

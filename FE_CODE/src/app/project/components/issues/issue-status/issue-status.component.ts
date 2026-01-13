@@ -10,6 +10,7 @@ import { ProjectQuery } from '@tungle/project/state/project/project.query';
 })
 export class IssueStatusComponent implements OnInit {
   @Input() issue: JIssue | undefined;
+  @Input() readOnly: boolean = false;
   // eslint-disable-next-line @typescript-eslint/naming-convention
   IssueStatusDisplay = IssueStatusDisplay;
 
@@ -35,11 +36,14 @@ export class IssueStatusComponent implements OnInit {
       // new IssueStatusValueTitle(IssueStatus.READY_TO_TEST),
       new IssueStatusValueTitle(IssueStatus.TESTING),
       new IssueStatusValueTitle(IssueStatus.DONE),
-      new IssueStatusValueTitle(IssueStatus.REJECT),
+      new IssueStatusValueTitle(IssueStatus.REJECT)
     ];
   }
 
   updateIssue(status: IssueStatus) {
+    if (this.readOnly) {
+      return;
+    }
     const newPosition = this._projectQuery.lastIssuePosition(status);
     this._projectService.updateIssue({
       ...this.issue!,

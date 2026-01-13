@@ -18,6 +18,9 @@ import {
 import { ProjectsService } from '@tungle/core/apis/projects.service';
 import { NotiService } from '@tungle/core/services/noti.service';
 import { AuthQuery } from '@tungle/project/auth/auth.query';
+import { PermissionUtil } from '@tungle/project/utils/permission';
+import { combineLatest } from 'rxjs';
+import { take } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
@@ -68,55 +71,51 @@ export class ProjectService {
   }
 
   updateIssue(issue: JIssue) {
-    this.authQuery.userId$.subscribe((userId) => {
-      const body: IUpdateATaskReq = {
-        id: issue.id,
-        project_id: issue.projectId,
-        name: issue.title,
-        description: issue.description,
-        label: issue.type,
-        status: issue.status,
-        priority: issue.priority,
-        start_date: issue.startDate,
-        end_date: issue.endDate,
-        assigned_by: issue.reporterId,
-        created_by: issue.createdBy,
-        story_point: issue.storyPoint,
-        user_update: userId,
-        follower_ids: issue.userIds
-      };
+    combineLatest([this.authQuery.userId$, this.authQuery.role$])
+      .pipe(take(1))
+      .subscribe(([userId, role]) => {
+        if (!PermissionUtil.canEditIssue(issue, userId ?? null, role ?? null)) {
+          this._notiService.warning('Bạn không có quyền chỉnh sửa công việc này');
+          return;
+        }
 
-      this._http
-        .put<IUpdateATaskReq>(`${this.baseUrl1}/api/task/update`, body)
-        .pipe(
-          setLoading(this._store),
-          tap((data) => {
-            this._store.update((state) => {
-              const issues = arrayUpsert(state.issues, issue.id, issue);
-              return {
-                ...state,
-                issues
-              };
-            });
-            // this._notiService.success();
-          }),
-          catchError((error) => {
-            this._store.setError(error);
-            // this._notiService.error();
-            return of(error);
-          })
-        )
-        .subscribe();
+        const body: IUpdateATaskReq = {
+          id: issue.id,
+          project_id: issue.projectId,
+          name: issue.title,
+          description: issue.description,
+          label: issue.type,
+          status: issue.status,
+          priority: issue.priority,
+          start_date: issue.startDate,
+          end_date: issue.endDate,
+          assigned_by: issue.reporterId,
+          created_by: issue.createdBy,
+          story_point: issue.storyPoint,
+          user_update: userId,
+          follower_ids: issue.userIds
+        };
 
-      // issue.updatedAt = DateUtil.getNow();
-      // this._store.update((state) => {
-      //   const issues = arrayUpsert(state.issues, issue.id, issue);
-      //   return {
-      //     ...state,
-      //     issues
-      //   };
-      // });
-    });
+        this._http
+          .put<IUpdateATaskReq>(`${this.baseUrl1}/api/task/update`, body)
+          .pipe(
+            setLoading(this._store),
+            tap(() => {
+              this._store.update((state) => {
+                const issues = arrayUpsert(state.issues, issue.id, issue);
+                return {
+                  ...state,
+                  issues
+                };
+              });
+            }),
+            catchError((error) => {
+              this._store.setError(error);
+              return of(error);
+            })
+          )
+          .subscribe();
+      });
   }
 
   upsertIssueToStore(issue: JIssue) {

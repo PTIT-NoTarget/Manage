@@ -12,6 +12,7 @@ import { ProjectService } from '@tungle/project/state/project/project.service';
 })
 export class IssueDescriptionComponent implements OnChanges {
   @Input() issue: JIssue | undefined;
+  @Input() readOnly: boolean = false;
   descriptionControl: FormControl = new FormControl('');
   editorOptions = quillConfiguration;
   isEditing: boolean = false;
@@ -27,6 +28,10 @@ export class IssueDescriptionComponent implements OnChanges {
   }
 
   setEditMode(mode: boolean) {
+    if (this.readOnly) {
+      this.isEditing = false;
+      return;
+    }
     this.isEditing = mode;
   }
 
@@ -37,6 +42,9 @@ export class IssueDescriptionComponent implements OnChanges {
   }
 
   save() {
+    if (this.readOnly) {
+      return;
+    }
     this._projectService.updateIssue({
       ...this.issue!,
       description: this.descriptionControl.value

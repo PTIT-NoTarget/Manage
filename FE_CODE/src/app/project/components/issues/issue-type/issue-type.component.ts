@@ -12,6 +12,7 @@ import { ProjectConst } from '@tungle/project/config/const';
 })
 export class IssueTypeComponent implements OnInit, OnChanges {
   @Input() issue: JIssue | undefined;
+  @Input() readOnly: boolean = false;
 
   get selectedIssueTypeIcon(): string {
     return IssueUtil.getIssueTypeIcon(this.issue?.type!);
@@ -28,6 +29,9 @@ export class IssueTypeComponent implements OnInit, OnChanges {
   ngOnChanges(): void {}
 
   updateIssue(issueType: IssueType) {
+    if (this.readOnly) {
+      return;
+    }
     this._projectService.updateIssue({
       ...this.issue!,
       type: issueType

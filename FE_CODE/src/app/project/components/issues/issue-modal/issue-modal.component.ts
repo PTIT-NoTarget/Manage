@@ -14,6 +14,7 @@ import { JTask } from '@tungle/interface/project';
 })
 export class IssueModalComponent {
   @Input() issue$!: Observable<JIssue | undefined>;
+  @Input() readOnly: boolean | null = null;
 
   constructor(
     private _modal: NzModalRef,

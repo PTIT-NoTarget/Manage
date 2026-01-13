@@ -10,7 +10,7 @@ import { JwtPayloadWithId } from '@tungle/project/auth/auth.service';
 import { IssueModalComponent } from '../issues/issue-modal/issue-modal.component';
 import { ProjectService } from '@tungle/project/state/project/project.service';
 import { ProjectQuery } from '@tungle/project/state/project/project.query';
-import { from, of } from 'rxjs';
+import { firstValueFrom, from, of } from 'rxjs';
 import { catchError, map, switchMap, take, tap } from 'rxjs/operators';
 import { JIssue } from '@tungle/interface/issue';
 
@@ -122,13 +122,18 @@ export class HeaderComponent implements OnInit {
       })
     );
 
+    const issue = await firstValueFrom(issue$);
+    if (!issue) {
+      return;
+    }
+
     this.modalService.create({
       nzContent: IssueModalComponent,
       nzWidth: 1040,
       nzClosable: false,
       nzFooter: null,
       nzComponentParams: {
-        issue$
+        issue$: of(issue)
       }
     });
   }

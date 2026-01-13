@@ -9,6 +9,7 @@ import { ProjectService } from '@tungle/project/state/project/project.service';
 })
 export class IssueStartDateComponent implements OnChanges {
   @Input() issue: JIssue | undefined;
+  @Input() readOnly: boolean = false;
 
   selectedDate: Date | null = null;
 
@@ -34,6 +35,9 @@ export class IssueStartDateComponent implements OnChanges {
   }
 
   updateDate(date: Date | null) {
+    if (this.readOnly) {
+      return;
+    }
     this.selectedDate = date;
     const startDate = date ? date.toISOString() : null;
 

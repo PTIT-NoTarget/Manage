@@ -12,6 +12,7 @@ import { ProjectConst } from '@tungle/project/config/const';
 })
 export class IssuePriorityComponent implements OnInit, OnChanges {
   @Input() issue: JIssue | undefined;
+  @Input() readOnly: boolean = false;
 
   selectedPriority: IssuePriority | undefined;
   get selectedPriorityIcon() {
@@ -35,6 +36,9 @@ export class IssuePriorityComponent implements OnInit, OnChanges {
   }
 
   updateIssue(priority: IssuePriority) {
+    if (this.readOnly) {
+      return;
+    }
     this.selectedPriority = priority;
     this._projectService.updateIssue({
       ...this.issue!,

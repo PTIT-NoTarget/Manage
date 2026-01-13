@@ -3,6 +3,7 @@
   class="date-picker-button"
   [ngModel]="selectedDate"
   (ngModelChange)="updateDate($event)"
+  [nzDisabled]="readOnly"
   [nzFormat]="'dd/MM/yyyy'"
   [nzShowToday]="true"
   [nzAllowClear]="true"

@@ -3,8 +3,22 @@
     {{ IssueStatusDisplay[status!] }}
     <span class="lowercase text-13">{{ issuesCount }}</span>
   </div>
-  <div class="h-full pl-2" cdkDropList [cdkDropListData]="issues" [id]="status!" (cdkDropListDropped)="drop($event)">
-    <issue-card *ngFor="let issue of issues;" [issue]="issue" cdkDrag [cdkDragData]="issue">
+  <div
+    class="h-full pl-2"
+    cdkDropList
+    [cdkDropListData]="issues"
+    [id]="status!"
+    (cdkDropListDropped)="drop($event)"
+  >
+    <issue-card
+      *ngFor="let issue of issues"
+      [issue]="issue"
+      [readOnly]="!canEdit(issue)"
+      cdkDrag
+      [cdkDragData]="issue"
+      [cdkDragDisabled]="!canEdit(issue)"
+      [class.drag-disabled]="!canEdit(issue)"
+    >
     </issue-card>
   </div>
 </div>

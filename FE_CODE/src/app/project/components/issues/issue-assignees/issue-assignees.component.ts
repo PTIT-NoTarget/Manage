@@ -13,37 +13,68 @@ import { ProjectService } from '@tungle/project/state/project/project.service';
 export class IssueAssigneesComponent implements OnInit, OnChanges {
   @Input() issue: JIssue | undefined;
   @Input() users: JUser[] | null = null;
+  @Input() readOnly: boolean = false;
   assignees: (JUser | undefined)[] = [];
 
   constructor(private _projectService: ProjectService) {}
 
   ngOnInit(): void {
-    this.assignees = this.issue!.userIds?.map((userId) => this.users!.find((x) => x.id === userId));
+    this.recomputeAssignees();
   }
 
   ngOnChanges(changes: SimpleChanges) {
     const issueChange = changes.issue;
-    if (this.users && issueChange.currentValue !== issueChange.previousValue) {
-      this.assignees = this.issue!.userIds?.map((userId) => this.users!.find((x) => x.id === userId));
+    const usersChange = changes.users;
+
+    const didIssueChange = !!issueChange && issueChange.currentValue !== issueChange.previousValue;
+    const didUsersChange = !!usersChange && usersChange.currentValue !== usersChange.previousValue;
+
+    if (didIssueChange || didUsersChange) {
+      this.recomputeAssignees();
     }
   }
 
+  private recomputeAssignees(): void {
+    if (!this.issue) {
+      this.assignees = [];
+      return;
+    }
+
+    const users = this.users ?? [];
+    const userIds = this.issue.userIds ?? [];
+    this.assignees = userIds.map((userId) => users.find((x) => x.id === userId));
+  }
+
   removeUser(userId: number) {
-    const newUserIds = this.issue!.userIds.filter((x) => x !== userId);
+    if (this.readOnly) {
+      return;
+    }
+    if (!this.issue) {
+      return;
+    }
+
+    const newUserIds = (this.issue.userIds ?? []).filter((x) => x !== userId);
     this._projectService.updateIssue({
-      ...this.issue!,
+      ...this.issue,
       userIds: newUserIds
     });
   }
 
   addUserToIssue(user: JUser) {
+    if (this.readOnly) {
+      return;
+    }
+    if (!this.issue) {
+      return;
+    }
+
     this._projectService.updateIssue({
-      ...this.issue!,
-      userIds: [...this.issue!.userIds, user.id]
+      ...this.issue,
+      userIds: [...(this.issue.userIds ?? []), user.id]
     });
   }
 
   isUserSelected(user: JUser): boolean {
-    return this.issue!.userIds.includes(user.id);
+    return (this.issue?.userIds ?? []).includes(user.id);
   }
 }

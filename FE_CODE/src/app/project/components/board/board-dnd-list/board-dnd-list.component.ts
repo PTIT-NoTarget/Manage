@@ -23,6 +23,7 @@ import * as dateFns from 'date-fns';
 import { IssueUtil } from '@tungle/project/utils/issue';
 import { IGetAllTaskRes } from '@tungle/core/apis/task.service';
 import { JTask } from '@tungle/interface/project';
+import { PermissionUtil } from '@tungle/project/utils/permission';
 
 @Component({
   selector: '[board-dnd-list]',
@@ -34,6 +35,7 @@ import { JTask } from '@tungle/interface/project';
 export class BoardDndListComponent implements OnInit {
   @Input() status: IssueStatus | undefined;
   @Input() currentUserId: number | null = null;
+  @Input() currentUserRole: string | null | undefined = null;
   @Input() issues$: Observable<JIssue[]> | undefined;
 
   // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -58,7 +60,16 @@ export class BoardDndListComponent implements OnInit {
       });
   }
 
+  canEdit(issue: JIssue): boolean {
+    return PermissionUtil.canEditIssue(issue, this.currentUserId, this.currentUserRole);
+  }
+
   drop(event: CdkDragDrop<JIssue[]>) {
+    const dragged: JIssue = event.item.data;
+    if (!this.canEdit(dragged)) {
+      return;
+    }
+
     const newIssue: JIssue = { ...event.item.data };
     const newIssues = [...event.container.data];
     if (event.previousContainer === event.container) {
@@ -102,6 +113,9 @@ export class BoardDndListComponent implements OnInit {
 
   private updateListPosition(newList: JIssue[]) {
     newList.forEach((issue, idx) => {
+      if (!this.canEdit(issue)) {
+        return;
+      }
       const newIssueWithNewPosition = { ...issue, listPosition: idx + 1 };
       this._projectService.updateIssue(newIssueWithNewPosition);
     });

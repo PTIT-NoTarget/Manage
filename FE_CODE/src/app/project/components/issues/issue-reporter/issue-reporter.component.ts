@@ -13,14 +13,21 @@ import { ProjectService } from '@tungle/project/state/project/project.service';
 export class IssueReporterComponent implements OnChanges {
   @Input() issue: JIssue | undefined;
   @Input() users: JUser[] | null = null;
+  @Input() readOnly: boolean = false;
   reporter: JUser | undefined;
 
   constructor(private _projectService: ProjectService) {}
 
   ngOnChanges(changes: SimpleChanges) {
     const issueChange = changes.issue;
-    if (this.users && issueChange.currentValue !== issueChange.previousValue) {
-      this.reporter = this.users.find((x) => x.id === this.issue?.reporterId);
+    const usersChange = changes.users;
+
+    const didIssueChange = !!issueChange && issueChange.currentValue !== issueChange.previousValue;
+    const didUsersChange = !!usersChange && usersChange.currentValue !== usersChange.previousValue;
+
+    if (didIssueChange || didUsersChange) {
+      const users = this.users ?? [];
+      this.reporter = users.find((x) => x.id === this.issue?.reporterId);
     }
   }
 
@@ -29,8 +36,15 @@ export class IssueReporterComponent implements OnChanges {
   }
 
   updateIssue(user: JUser) {
+    if (this.readOnly) {
+      return;
+    }
+    if (!this.issue) {
+      return;
+    }
+
     this._projectService.updateIssue({
-      ...this.issue!,
+      ...this.issue,
       reporterId: user.id
     });
   }
