@@ -45,7 +45,7 @@ export class ProjectsAddComponent implements OnInit {
     private cdr: ChangeDetectorRef,
     private modalRef: NzModalRef,
     private projectQuery: ProjectQuery,
-    private userService: UserService,
+    private userService: UserService
   ) {}
 
   async ngOnInit() {
@@ -53,8 +53,18 @@ export class ProjectsAddComponent implements OnInit {
   }
 
   async addProject() {
+    const projectName = this.form.get('name')?.value;
+
+    // Kiểm tra tên dự án đã tồn tại chưa
+    const checkResult = await this.projectsService.checkProjectName({ name: projectName });
+
+    if (checkResult.exists) {
+      this.notiService.error('Tên dự án đã tồn tại. Vui lòng chọn tên khác.');
+      return;
+    }
+
     const body: IAddAProjectReq = {
-      name: this.form.get('name')?.value,
+      name: projectName,
       description: this.form.get('description')?.value,
       start_date: this.form.get('start_date')?.value,
       end_date: this.form.get('end_date')?.value,
@@ -95,9 +105,22 @@ export class ProjectsAddComponent implements OnInit {
   }
 
   async updateProject() {
+    const projectName = this.form.get('name')?.value;
+
+    // Kiểm tra tên dự án đã tồn tại chưa (trừ chính nó)
+    const checkResult = await this.projectsService.checkProjectName({
+      name: projectName,
+      excludeId: this.modifyId!
+    });
+
+    if (checkResult.exists) {
+      this.notiService.error('Tên dự án đã tồn tại. Vui lòng chọn tên khác.');
+      return;
+    }
+
     const body: IUpdateAProjectReq = {
       id: this.modifyId!,
-      name: this.form.get('name')?.value,
+      name: projectName,
       description: this.form.get('description')?.value,
       start_date: this.form.get('start_date')?.value,
       end_date: this.form.get('end_date')?.value,

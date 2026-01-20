@@ -24,7 +24,7 @@ app.use(express.json());
 app.use(
   express.urlencoded({
     extended: true,
-  })
+  }),
 );
 
 // socket server
@@ -46,6 +46,7 @@ require("./app/routes/task-routes")(app);
 require("./app/routes/sub-task-routes")(app);
 require("./app/routes/department-routes")(app);
 require("./app/routes/notification-routes")(app);
+require("./app/routes/upload-routes")(app);
 
 // listen port
 const PORT = process.env.PORT || 8080;

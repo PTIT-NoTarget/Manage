@@ -21,8 +21,13 @@ export class ProfileComponent {
 
   ngOnInit() {}
 
+  /**
+   * Handle user avatar upload
+   * @param $event Upload event containing image URL
+   */
   updateUser($event: IUploadRes) {
-    if ($event.isLoading === false) {
+    // Only process when upload is complete (isLoading === false)
+    if ($event.isLoading === false && $event.imgUrl) {
       this.authQuery.user$.pipe(take(1)).subscribe(async (user) => {
         const body: IUpdateAUserReq = {
           id: user.id,
@@ -31,19 +36,18 @@ export class ProfileComponent {
           dob: user.dob!,
           address: user.address!,
           position: user.position!,
-          avatarUrl: $event.imgUrl,
+          avatarUrl: $event.imgUrl!,
           role: user.role!
         };
 
-        await this.userService
-          .updateAUser(body)
-          .then(() => {
-            this._authService.getUser();
-            // this.notiService.success();
-          })
-          .catch((err) => {
-            this.notiService.error();
-          });
+        try {
+          await this.userService.updateAUser(body);
+          this._authService.getUser();
+          this.notiService.success('Cập nhật ảnh đại diện thành công');
+        } catch (err) {
+          console.error('Update user error:', err);
+          this.notiService.error('Lỗi khi cập nhật ảnh đại diện');
+        }
       });
     }
   }

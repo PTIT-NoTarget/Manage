@@ -1,5 +1,6 @@
 const database = require("../models/index.js");
 const User = database.user;
+const Department = database.department;
 const { Op } = require("sequelize");
 
 var bcrypt = require("bcryptjs");
@@ -52,6 +53,14 @@ exports.getAllUsers = async (req, res) => {
       offset: offset,
       where: whereCondition,
       attributes: { exclude: ["password"] },
+      include: [
+        {
+          model: Department,
+          as: "department",
+          attributes: ["id", "name", "description"],
+          required: false,
+        },
+      ],
     });
 
     res.json({
@@ -107,8 +116,7 @@ exports.updateUser = async (req, res) => {
 
     if (req.body.password) {
       req.body.password = await bcrypt.hash(req.body.password, 8);
-    }
-    else {
+    } else {
       req.body.password = user.password;
     }
 

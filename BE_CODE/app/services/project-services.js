@@ -1,7 +1,7 @@
 const database = require("../models/index.js");
 const Project = database.project;
 const ProjectUser = database.project_user;
-const User = database.user; 
+const User = database.user;
 
 exports.getAllProjects = async (req, res) => {
   try {
@@ -43,27 +43,60 @@ exports.getAllProjects = async (req, res) => {
   }
 };
 
-exports.addAProject = async (req, res) => {
-  const body = {
-    name: req.body.name,
-    description: req.body.description,
-    start_date: req.body.start_date,
-    end_date: req.body.end_date,
-    status: req.body.status,
-    manager_id: req.body.manager_id,
-    image_url: req.body.image_url,
-  };
+exports.checkProjectNameExists = async (req, res) => {
+  try {
+    const { name, excludeId } = req.body;
 
-  await Project.create(body)
-    .then(() => {
-      res.send({ message: "Project successfully registered" });
-    })
-    .catch((exception) => {
-      console.error("❌ Failed to create project:", exception); 
-      res.status(500).send({ message: exception.message });
-    });
+    if (!name) {
+      return res.status(400).json({ error: "Project name is required" });
+    }
+
+    const whereClause = { name: name };
+
+    // Nếu có excludeId (trường hợp update), loại trừ project đang update
+    if (excludeId) {
+      whereClause.id = { [database.Sequelize.Op.ne]: excludeId };
+    }
+
+    const existingProject = await Project.findOne({ where: whereClause });
+
+    res.json({ exists: !!existingProject });
+  } catch (error) {
+    console.error("Error checking project name:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 };
 
+exports.addAProject = async (req, res) => {
+  try {
+    const body = {
+      name: req.body.name,
+      description: req.body.description,
+      start_date: req.body.start_date,
+      end_date: req.body.end_date,
+      status: req.body.status,
+      manager_id: req.body.manager_id,
+      image_url: req.body.image_url,
+    };
+
+    // Kiểm tra tên dự án đã tồn tại
+    const existingProject = await Project.findOne({
+      where: { name: body.name },
+    });
+
+    if (existingProject) {
+      return res
+        .status(400)
+        .send({ message: "Tên dự án đã tồn tại. Vui lòng chọn tên khác." });
+    }
+
+    await Project.create(body);
+    res.send({ message: "Project successfully registered" });
+  } catch (exception) {
+    console.error("❌ Failed to create project:", exception);
+    res.status(500).send({ message: exception.message });
+  }
+};
 
 exports.getProjectById = async (req, res) => {
   try {
@@ -104,6 +137,23 @@ exports.updateProject = async (req, res) => {
         success: false,
         message: "Project not found",
       });
+    }
+
+    // Kiểm tra tên dự án đã tồn tại (trừ chính nó)
+    if (req.body.name) {
+      const existingProject = await Project.findOne({
+        where: {
+          name: req.body.name,
+          id: { [database.Sequelize.Op.ne]: req.body.id },
+        },
+      });
+
+      if (existingProject) {
+        return res.status(400).json({
+          success: false,
+          message: "Tên dự án đã tồn tại. Vui lòng chọn tên khác.",
+        });
+      }
     }
 
     await project.update(req.body);
@@ -185,7 +235,7 @@ exports.addUsersToProject = async (req, res) => {
     if (users.length === 0) {
       return res.status(404).json({
         message: `No users found with the provided IDs: ${body.userIds.join(
-          ", "
+          ", ",
         )}`,
       });
     }
@@ -194,7 +244,7 @@ exports.addUsersToProject = async (req, res) => {
 
     return res.status(200).json({
       message: `Users with IDs [${body.userIds.join(
-        ", "
+        ", ",
       )}] added to project with ID ${body.projectId}`,
     });
   } catch (error) {

@@ -344,8 +344,8 @@ exports.addATask = async (req, res) => {
     if (user) {
       await sendTelegramMessage(
         `<b>${escapeTelegramHtml(
-          user.dataValues.fullName
-        )}</b> vừa tạo mới công việc <b>${escapeTelegramHtml(body.name)}</b>`
+          user.dataValues.fullName,
+        )}</b> vừa tạo mới công việc <b>${escapeTelegramHtml(body.name)}</b>`,
       );
     }
 
@@ -467,12 +467,12 @@ exports.updateATask = async (req, res) => {
       if (user) {
         await sendTelegramMessage(
           `<b>${escapeTelegramHtml(
-            user.dataValues.fullName
+            user.dataValues.fullName,
           )}</b> đã cập nhật trạng thái công việc <b>${escapeTelegramHtml(
-            task.dataValues.name
+            task.dataValues.name,
           )}</b> (${escapeTelegramHtml(prevStatus)} → ${escapeTelegramHtml(
-            body.status
-          )})`
+            body.status,
+          )})`,
         );
       }
 
@@ -507,11 +507,43 @@ exports.deleteATask = async (req, res) => {
       });
     }
 
+    // Delete related notifications by querying all notifications and filtering by parsed metadata
+    const allNotifications = await Notification.findAll({
+      raw: true,
+    });
+
+    const notificationsToDelete = allNotifications.filter((noti) => {
+      try {
+        const metadata = JSON.parse(noti.metadata);
+        return metadata.taskId === req.body.id;
+      } catch (e) {
+        return false;
+      }
+    });
+
+    // Delete all matching notifications
+    let deletedNotiIds = [];
+    if (notificationsToDelete.length > 0) {
+      deletedNotiIds = notificationsToDelete.map((noti) => noti.id);
+      await Notification.destroy({
+        where: {
+          id: deletedNotiIds,
+        },
+      });
+    }
+
     await task.destroy();
+
+    // Emit socket event to notify frontend about deleted task and notifications
+    io.emit("taskDeleted", {
+      taskId: req.body.id,
+      deletedNotificationIds: deletedNotiIds,
+    });
 
     return res.status(200).json({
       success: true,
       message: "Task deleted successfully",
+      deletedNotificationIds: deletedNotiIds,
     });
   } catch (error) {
     console.log(error);
@@ -669,7 +701,7 @@ exports.importTasksFromExcel = async (req, res) => {
             createdAt: createdAtIso || undefined,
             updatedAt: createdAtIso || undefined,
           },
-          { transaction }
+          { transaction },
         );
         created.push({ row: index + 2, id: newTask.id });
 
@@ -692,12 +724,12 @@ exports.importTasksFromExcel = async (req, res) => {
           notiBody,
           telegramHtml: creatorName
             ? `<b>${escapeTelegramHtml(
-                creatorName
+                creatorName,
               )}</b> vừa import công việc <b>${escapeTelegramHtml(
-                newTask.name
+                newTask.name,
               )}</b>`
             : `<b>Import</b> vừa tạo công việc <b>${escapeTelegramHtml(
-                newTask.name
+                newTask.name,
               )}</b>`,
         });
       } catch (e) {
@@ -868,11 +900,11 @@ exports.downloadImportTemplate = async (req, res) => {
 
     res.setHeader(
       "Content-Type",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     );
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename=task_import_template_project_${projectId}.xlsx`
+      `attachment; filename=task_import_template_project_${projectId}.xlsx`,
     );
 
     const buffer = await wb.xlsx.writeBuffer();

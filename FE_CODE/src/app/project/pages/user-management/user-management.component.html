@@ -23,10 +23,6 @@
         <nz-option *ngFor="let item of genders" [nzLabel]="item.label" [nzValue]="item.value"></nz-option>
       </nz-select>
     </div>
-    <div class="mb-4">
-      <p class="mb-2">Ngày tạo</p>
-      <nz-date-picker formControlName="createdAt" nzPlaceHolder="Ngày tạo" class="w-full"></nz-date-picker>
-    </div>
     <div class="flex items-center mt-[10px]">
       <button (click)="cancel()" nz-button class="mr-4">Hủy</button>
       <button (click)="search()" nz-button nzType="primary">Tìm kiếm</button>
@@ -46,8 +42,7 @@
       <td class="truncate">{{ row.email }}</td>
       <td class="truncate">{{ row.dob | date:'yyyy-MM-dd' }}</td>
       <td class="truncate">{{ getNameByCode(genders, row.sex) }}</td>
-      <td class="truncate">{{ row.createdAt | date:'yyyy-MM-dd' }}</td>
-      <td class="truncate">{{ row.updatedAt | date:'yyyy-MM-dd' }}</td>
+      <td class="truncate">{{ row.departmentName }}</td>
       <td class="flex items-center">
         <span (click)="openEditModal(row.id)" nz-icon nzType="edit" nzTheme="outline"
           class="text-lg mr-2 cursor-pointer hover:text-blue-500"></span>

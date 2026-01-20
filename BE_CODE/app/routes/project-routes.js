@@ -8,13 +8,16 @@ module.exports = function (app) {
     res.header(
       "Access-Control-Allow-Headers",
       "Authorization",
-      "Origin, Content-Type, Accept"
+      "Origin, Content-Type, Accept",
     );
     next();
   });
 
   //Add a project
   app.post(apiUrl + "/add", projectServices.addAProject);
+
+  //check project name exists
+  app.post(apiUrl + "/checkName", projectServices.checkProjectNameExists);
 
   //get all project
   app.post(apiUrl + "/getAll", projectServices.getAllProjects);

@@ -57,7 +57,17 @@ export class ProjectsService {
 
   deleteMemberFromProject(body: IDeleteMemberFromProjectReq): Promise<IDeleteMemberFromProjectRes> {
     return this.requestService
-      .jsonRequestWithLoading<IDeleteMemberFromProjectReq>('DELETE', this.apiUrl + '/deleteUser', body)
+      .jsonRequestWithLoading<IDeleteMemberFromProjectReq>(
+        'DELETE',
+        this.apiUrl + '/deleteUser',
+        body
+      )
+      .toPromise();
+  }
+
+  checkProjectName(body: ICheckProjectNameReq): Promise<ICheckProjectNameRes> {
+    return this.requestService
+      .jsonRequestWithLoading<ICheckProjectNameReq>('POST', this.apiUrl + '/checkName', body)
       .toPromise();
   }
 }
@@ -159,4 +169,13 @@ export interface IDeleteMemberFromProjectReq {
 
 export interface IDeleteMemberFromProjectRes {
   message: string;
+}
+
+export interface ICheckProjectNameReq {
+  name: string;
+  excludeId?: number;
+}
+
+export interface ICheckProjectNameRes {
+  exists: boolean;
 }

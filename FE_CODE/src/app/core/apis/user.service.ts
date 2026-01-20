@@ -68,6 +68,12 @@ export interface IGetAllUserRes {
     position_1: string | null;
     position_level: string | null;
     start_date: string;
+    department_id: number | null;
+    department: {
+      id: number;
+      name: string;
+      description: string;
+    } | null;
     createdAt: string;
     updatedAt: string;
   }[];

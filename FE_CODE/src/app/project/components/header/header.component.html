@@ -69,7 +69,7 @@
         <span *ngIf="authQuery.user$ | async as user" class="text-[#0071AF] flex items-center">
           <j-avatar
             class="flex"
-            [avatarUrl]="user.avatarUrl ?? 'https://img.freepik.com/premium-photo/incredible-h…-as-symmetrical-flat-icon-design_978521-11722.jpg'"
+            [avatarUrl]="user.avatarUrl || 'https://img.freepik.com/premium-photo/incredible-h…-as-symmetrical-flat-icon-design_978521-11722.jpg'"
             [size]="26"
           >
           </j-avatar>

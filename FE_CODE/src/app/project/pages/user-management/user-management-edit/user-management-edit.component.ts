@@ -104,7 +104,7 @@ export class UserManagementEditComponent implements OnInit {
 
   async updateUser() {
     this.form.patchValue({
-      id: this.userId,
+      id: this.userId
     });
 
     await this.userService
@@ -122,10 +122,16 @@ export class UserManagementEditComponent implements OnInit {
     this.nzModalRef.close();
   }
 
+  /**
+   * Handle avatar upload
+   * @param $event Upload event containing image URL
+   */
   onUpload($event: IUploadRes) {
     this.isLoading = $event.isLoading;
-    this.form.patchValue({
-      avatarUrl: $event.imgUrl
-    });
+    if ($event.imgUrl) {
+      this.form.patchValue({
+        avatarUrl: $event.imgUrl
+      });
+    }
   }
 }

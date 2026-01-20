@@ -44,6 +44,18 @@ export class HeaderComponent implements OnInit {
         this.totalCountNoti += 1;
       }
     });
+
+    // Lắng nghe khi task bị xóa
+    this.notificationService.onTaskDeleted(
+      (data: { taskId: number; deletedNotificationIds: number[] }) => {
+        // Remove deleted notifications from list
+        this.listNoti = this.listNoti.filter(
+          (noti) => !data.deletedNotificationIds.includes(noti.id)
+        );
+        this.totalCountNoti = this.listNoti.filter((item) => item.seen === false).length;
+        this.cdr.detectChanges();
+      }
+    );
   }
 
   ngOnDestroy() {

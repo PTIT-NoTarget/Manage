@@ -25,6 +25,11 @@ export class NotificationService {
     this.socket.on('taskNotification', callback);
   }
 
+  // Lắng nghe khi task bị xóa
+  onTaskDeleted(callback: (data: { taskId: number; deletedNotificationIds: number[] }) => void) {
+    this.socket.on('taskDeleted', callback);
+  }
+
   // Ngắt kết nối
   disconnect() {
     this.socket.disconnect();

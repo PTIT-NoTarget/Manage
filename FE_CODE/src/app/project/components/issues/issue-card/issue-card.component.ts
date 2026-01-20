@@ -14,7 +14,6 @@ import { ProjectQuery } from '@tungle/project/state/project/project.query';
 import { IssueUtil } from '@tungle/project/utils/issue';
 import { NzModalService } from 'ng-zorro-antd/modal';
 import { IssueModalComponent } from '../issue-modal/issue-modal.component';
-import { IDeleteATaskReq, TaskService } from '@tungle/core/apis/task.service';
 import { NotiService } from '@tungle/core/services/noti.service';
 import { ProjectService } from '@tungle/project/state/project/project.service';
 
@@ -37,7 +36,6 @@ export class IssueCardComponent implements OnChanges, OnInit {
   constructor(
     private _projectQuery: ProjectQuery,
     private _modalService: NzModalService,
-    private taskService: TaskService,
     private notiService: NotiService,
     private _projectService: ProjectService
   ) {}
@@ -80,22 +78,7 @@ export class IssueCardComponent implements OnChanges, OnInit {
       return;
     }
 
-    const body: IDeleteATaskReq = {
-      id: Number(id)
-    };
-    await this.taskService
-      .deleteATask(body)
-      .then((data) => {
-        if (data.success) {
-          this._projectService.deleteTask(Number(id));
-          this.notiService.success();
-        } else {
-          this.notiService.error();
-        }
-      })
-      .catch((err) => {
-        this.notiService.error();
-      });
+    this._projectService.deleteIssue(Number(id));
   }
 
   getUserDetail(userId: number | null): JUser | null {

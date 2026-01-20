@@ -129,13 +129,28 @@ export class ProjectService {
   }
 
   deleteIssue(issueId: number) {
-    this._store.update((state) => {
-      const issues = arrayRemove(state.issues, issueId);
-      return {
-        ...state,
-        issues
-      };
-    });
+    const body = { id: issueId };
+    this._http
+      .delete<any>(`${this.baseUrl1}/api/task/delete`, { body })
+      .pipe(
+        setLoading(this._store),
+        tap(() => {
+          this._store.update((state) => {
+            const issues = arrayRemove(state.issues, issueId);
+            return {
+              ...state,
+              issues
+            };
+          });
+          this._notiService.success('Xóa công việc thành công');
+        }),
+        catchError((error) => {
+          this._store.setError(error);
+          this._notiService.error('Xóa công việc thất bại');
+          return of(error);
+        })
+      )
+      .subscribe();
   }
 
   updateIssueComment(issueId: number, comment: JComment) {
@@ -217,10 +232,10 @@ export class ProjectService {
 
   deleteTask(taskId: number) {
     this._store.update((state) => {
-      const tasks = arrayRemove(state.tasks, taskId);
+      const issues = arrayRemove(state.issues, taskId);
       return {
         ...state,
-        tasks
+        issues
       };
     });
   }

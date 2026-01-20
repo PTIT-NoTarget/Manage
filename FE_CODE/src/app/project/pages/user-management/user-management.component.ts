@@ -46,13 +46,9 @@ export class UserManagementComponent implements OnInit {
       priority: false
     },
     {
-      title: 'Ngày tạo',
-      compare: (a: ItemData, b: ItemData) => a.createdAt.localeCompare(b.createdAt),
-      priority: false
-    },
-    {
-      title: 'Ngày cập nhật',
-      compare: (a: ItemData, b: ItemData) => a.updatedAt.localeCompare(b.updatedAt),
+      title: 'Phòng ban',
+      compare: (a: ItemData, b: ItemData) =>
+        (a.departmentName || '').localeCompare(b.departmentName || ''),
       priority: false
     },
     {
@@ -73,8 +69,7 @@ export class UserManagementComponent implements OnInit {
     fullName: new FormControl(),
     email: new FormControl(),
     dob: new FormControl(),
-    sex: new FormControl(),
-    createdAt: new FormControl()
+    sex: new FormControl()
   });
 
   totalCount!: number;
@@ -103,6 +98,7 @@ export class UserManagementComponent implements OnInit {
         email: item.email,
         dob: item.dob,
         sex: item.sex,
+        departmentName: item.department?.name || 'Chưa có phòng ban',
         createdAt: item.createdAt,
         updatedAt: item.updatedAt
       };
@@ -226,14 +222,9 @@ export class UserManagementComponent implements OnInit {
         width: 10
       },
       {
-        key: 'createdAt',
-        name: 'Ngày tạo',
-        width: 15
-      },
-      {
-        key: 'updatedAt',
-        name: 'Ngày cập nhật',
-        width: 15
+        key: 'departmentName',
+        name: 'Phòng ban',
+        width: 20
       }
     ];
     const fileName = 'Danh sách người dùng';
@@ -254,6 +245,7 @@ interface ItemData {
   email: string;
   dob: string;
   sex: string;
+  departmentName?: string;
   imageUrl?: string;
   createdAt: string;
   updatedAt: string;
