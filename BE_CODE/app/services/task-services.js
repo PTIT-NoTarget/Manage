@@ -124,6 +124,61 @@ const splitFollowers = (value) => {
     .filter(Boolean);
 };
 
+const stripDiacritics = (value) => {
+  if (value == null) return "";
+  try {
+    return String(value)
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "")
+      .replace(/đ/g, "d")
+      .replace(/Đ/g, "D");
+  } catch {
+    return String(value);
+  }
+};
+
+const normalizeHeaderText = (value) =>
+  stripDiacritics(value).replace(/\s+/g, " ").trim().toUpperCase();
+
+const findHeaderRowIndexForTaskTemplate = (rowsAoa) => {
+  if (!Array.isArray(rowsAoa)) return -1;
+
+  const expected = [
+    "TÊN CÔNG VIỆC",
+    "TRẠNG THÁI",
+    "MÔ TẢ",
+    "NGÀY TẠO TASK",
+    "DEADLINE",
+    "NGƯỜI PHỤ TRÁCH",
+    "NGƯỜI THEO DÕI",
+    "ĐỘ ƯU TIÊN",
+  ].map(normalizeHeaderText);
+
+  let bestIndex = -1;
+  let bestScore = 0;
+
+  for (let i = 0; i < rowsAoa.length; i++) {
+    const row = rowsAoa[i];
+    if (!Array.isArray(row) || row.length === 0) continue;
+
+    const rowCells = row.map((c) => normalizeHeaderText(c)).filter(Boolean);
+    if (rowCells.length === 0) continue;
+
+    const score = expected.reduce(
+      (acc, h) => (rowCells.includes(h) ? acc + 1 : acc),
+      0,
+    );
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestIndex = i;
+    }
+  }
+
+  // Require at least 4 matching headers to avoid false positives
+  return bestScore >= 4 ? bestIndex : -1;
+};
+
 exports.getAllTasks = async (req, res) => {
   try {
     const page = parseInt(req.body.page) || 1;
@@ -197,6 +252,115 @@ exports.getAllTasks = async (req, res) => {
       page: page,
       pageSize: pageSize,
       issues: data,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+const getUtcWeekRangeMonToSat = (baseDate, weekOffset = 0) => {
+  const d = new Date(baseDate);
+  if (Number.isFinite(weekOffset) && weekOffset !== 0) {
+    d.setUTCDate(d.getUTCDate() + weekOffset * 7);
+  }
+
+  const dayOfWeek = d.getUTCDay(); // 0=Sun, 1=Mon, ...
+  const startOfWeek = new Date(d);
+  startOfWeek.setUTCDate(
+    d.getUTCDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1),
+  );
+  startOfWeek.setUTCHours(0, 0, 0, 0);
+
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setUTCDate(startOfWeek.getUTCDate() + 5); // Mon -> Sat
+  endOfWeek.setUTCHours(23, 59, 59, 999);
+
+  return { startOfWeek, endOfWeek };
+};
+
+exports.getDashboardWeekly = async (req, res) => {
+  try {
+    const weekOffset = Number(req.body.weekOffset ?? 0) || 0;
+    const projectId = req.body.project_id ?? null;
+    const assignedBy = req.body.assigned_by ?? null;
+
+    const { startOfWeek, endOfWeek } = getUtcWeekRangeMonToSat(
+      new Date(),
+      weekOffset,
+    );
+
+    const whereCondition = {
+      start_date: { [Op.ne]: null, [Op.lte]: endOfWeek },
+      [Op.or]: [{ end_date: { [Op.gte]: startOfWeek } }, { end_date: null }],
+    };
+
+    if (projectId) {
+      whereCondition.project_id = projectId;
+    }
+    if (assignedBy) {
+      whereCondition.assigned_by = assignedBy;
+    }
+
+    const tasks = await Task.findAll({
+      where: whereCondition,
+      attributes: ["id", "start_date", "end_date"],
+    });
+
+    const days = {
+      Monday: [],
+      Tuesday: [],
+      Wednesday: [],
+      Thursday: [],
+      Friday: [],
+      Saturday: [],
+    };
+
+    const dayKeys = [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+    ];
+
+    const getDayStartEndUtc = (dayIndex) => {
+      const dayStart = new Date(startOfWeek);
+      dayStart.setUTCDate(startOfWeek.getUTCDate() + dayIndex);
+      dayStart.setUTCHours(0, 0, 0, 0);
+
+      const dayEnd = new Date(dayStart);
+      dayEnd.setUTCHours(23, 59, 59, 999);
+      return { dayStart, dayEnd };
+    };
+
+    for (const task of tasks) {
+      const taskStart = task.start_date ? new Date(task.start_date) : null;
+      if (!taskStart || isNaN(taskStart.getTime())) continue;
+      const taskEndRaw = task.end_date ? new Date(task.end_date) : taskStart;
+      const taskEnd = !isNaN(taskEndRaw.getTime()) ? taskEndRaw : taskStart;
+
+      for (let i = 0; i < dayKeys.length; i++) {
+        const { dayStart, dayEnd } = getDayStartEndUtc(i);
+        const overlaps = taskStart <= dayEnd && taskEnd >= dayStart;
+        if (overlaps) {
+          days[dayKeys[i]].push(task.id);
+        }
+      }
+    }
+
+    return res.json({
+      weekStart: startOfWeek.toISOString(),
+      weekEnd: endOfWeek.toISOString(),
+      days: {
+        Monday: { count: days.Monday.length, taskIds: days.Monday },
+        Tuesday: { count: days.Tuesday.length, taskIds: days.Tuesday },
+        Wednesday: { count: days.Wednesday.length, taskIds: days.Wednesday },
+        Thursday: { count: days.Thursday.length, taskIds: days.Thursday },
+        Friday: { count: days.Friday.length, taskIds: days.Friday },
+        Saturday: { count: days.Saturday.length, taskIds: days.Saturday },
+      },
     });
   } catch (error) {
     console.log(error);
@@ -603,10 +767,36 @@ exports.importTasksFromExcel = async (req, res) => {
       });
     }
 
-    const sheet = workbook.Sheets[sheetName];
+    // Prefer the template sheet name, but fallback to first sheet
+    const sheet = workbook.Sheets["Tasks"] || workbook.Sheets[sheetName];
+    if (!sheet) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "Excel sheet not found",
+      });
+    }
+
+    // Detect the real header row (template has banner/project-info rows above)
+    const rowsAoa = XLSX.utils.sheet_to_json(sheet, {
+      header: 1,
+      defval: "",
+      raw: false,
+    });
+    const headerRowIndex = findHeaderRowIndexForTaskTemplate(rowsAoa);
+    if (headerRowIndex < 0) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message:
+          "Invalid template: cannot find header row. Please use the provided import template.",
+      });
+    }
+
     const rows = XLSX.utils.sheet_to_json(sheet, {
       defval: "",
       raw: false,
+      range: headerRowIndex,
     });
 
     if (!Array.isArray(rows) || rows.length === 0) {
@@ -627,6 +817,9 @@ exports.importTasksFromExcel = async (req, res) => {
     for (let index = 0; index < rows.length; index++) {
       const row = rows[index] || {};
 
+      // Excel row number for better error messages (1-based)
+      const excelRowNumber = headerRowIndex + 2 + index;
+
       const taskCode = row["Mã Task"] || row["Ma Task"] || row["MA TASK"];
       const taskName =
         row["Tên công việc"] || row["Ten cong viec"] || row["TEN CONG VIEC"];
@@ -645,8 +838,15 @@ exports.importTasksFromExcel = async (req, res) => {
       const priorityRaw =
         row["Độ ưu tiên"] || row["Do uu tien"] || row["DO UU TIEN"];
 
+      // Skip fully empty rows
+      const anyValue = Object.values(row).some((v) => String(v || "").trim());
+      if (!anyValue) continue;
+
       if (!taskName || !String(taskName).trim()) {
-        errors.push({ row: index + 2, message: "Tên công việc is required" });
+        errors.push({
+          row: excelRowNumber,
+          message: "Tên công việc is required",
+        });
         continue;
       }
 
@@ -703,7 +903,7 @@ exports.importTasksFromExcel = async (req, res) => {
           },
           { transaction },
         );
-        created.push({ row: index + 2, id: newTask.id });
+        created.push({ row: excelRowNumber, id: newTask.id });
 
         const notiBody = {
           user_id: 0,
@@ -734,7 +934,7 @@ exports.importTasksFromExcel = async (req, res) => {
         });
       } catch (e) {
         errors.push({
-          row: index + 2,
+          row: excelRowNumber,
           message: e?.message || "Create task failed",
         });
       }
@@ -788,6 +988,10 @@ exports.downloadImportTemplate = async (req, res) => {
         .json({ success: false, message: "Project not found" });
     }
 
+    const managerUser = project.manager_id
+      ? await User.findByPk(project.manager_id)
+      : null;
+
     const members = project.users || project.dataValues?.users || [];
     const userChoices = (members || []).map((u) => {
       const username = u.username || "";
@@ -814,7 +1018,7 @@ exports.downloadImportTemplate = async (req, res) => {
       views: [{ state: "frozen", ySplit: 1 }],
     });
 
-    ws.columns = [
+    const columns = [
       { header: "Tên công việc", key: "ten", width: 30 },
       { header: "Trạng thái", key: "trang_thai", width: 14 },
       { header: "Mô tả", key: "mo_ta", width: 35 },
@@ -825,19 +1029,175 @@ exports.downloadImportTemplate = async (req, res) => {
       { header: "Độ ưu tiên", key: "do_uu_tien", width: 14 },
     ];
 
-    ws.getRow(1).font = { bold: true };
+    // Set widths & keys (avoid auto header row at row 1)
+    ws.columns = columns.map((c) => ({ key: c.key, width: c.width }));
+
+    // ===== Pretty header + project info =====
+    const headerBg = "1F4E79"; // dark blue
+    const accentBg = "2F5597";
+    const softBg = "F2F2F2";
+    const tableHeaderBg = "1F4E79";
+    const tableHeaderFont = { bold: true, color: { argb: "FFFFFFFF" } };
+    const borderThin = {
+      top: { style: "thin", color: { argb: "FFBFBFBF" } },
+      left: { style: "thin", color: { argb: "FFBFBFBF" } },
+      bottom: { style: "thin", color: { argb: "FFBFBFBF" } },
+      right: { style: "thin", color: { argb: "FFBFBFBF" } },
+    };
+
+    // Title row
+    ws.mergeCells("A1:H1");
+    ws.getCell("A1").value = "TASK IMPORT TEMPLATE";
+    ws.getCell("A1").font = {
+      bold: true,
+      size: 16,
+      color: { argb: "FFFFFFFF" },
+    };
+    ws.getCell("A1").alignment = { vertical: "middle", horizontal: "center" };
+    ws.getCell("A1").fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: headerBg },
+    };
+    ws.getRow(1).height = 26;
+
+    // Project name row
+    ws.mergeCells("A2:H2");
+    ws.getCell("A2").value = project.name ? `Dự án: ${project.name}` : "Dự án";
+    ws.getCell("A2").font = {
+      bold: true,
+      size: 12,
+      color: { argb: "FFFFFFFF" },
+    };
+    ws.getCell("A2").alignment = { vertical: "middle", horizontal: "center" };
+    ws.getCell("A2").fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: accentBg },
+    };
+    ws.getRow(2).height = 20;
+
+    // Info grid (rows 3-6)
+    const managerName =
+      managerUser?.dataValues?.fullName ||
+      managerUser?.dataValues?.username ||
+      "";
+    const memberCount = Array.isArray(members) ? members.length : 0;
+    const memberPreview = (members || [])
+      .map((u) => u.fullName || u.username)
+      .filter(Boolean)
+      .slice(0, 12)
+      .join(", ");
+    const generatedAt = new Date().toISOString();
+
+    const setInfoRow = (row, leftLabel, leftValue, rightLabel, rightValue) => {
+      ws.getCell(`A${row}`).value = leftLabel;
+      ws.getCell(`B${row}`).value = leftValue;
+      ws.getCell(`E${row}`).value = rightLabel;
+      ws.getCell(`F${row}`).value = rightValue;
+
+      ["A", "E"].forEach((col) => {
+        const cell = ws.getCell(`${col}${row}`);
+        cell.font = { bold: true };
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: softBg },
+        };
+        cell.border = borderThin;
+      });
+      ["B", "F"].forEach((col) => {
+        const cell = ws.getCell(`${col}${row}`);
+        cell.border = borderThin;
+        cell.alignment = { vertical: "top", wrapText: true };
+      });
+
+      // Clear middle spacer columns but keep layout
+      ["C", "D", "G", "H"].forEach((col) => {
+        const cell = ws.getCell(`${col}${row}`);
+        cell.value = cell.value || null;
+      });
+    };
+
+    // Make the info values span multiple columns for readability
+    ws.mergeCells("B3:D3");
+    ws.mergeCells("F3:H3");
+    ws.mergeCells("B4:D4");
+    ws.mergeCells("F4:H4");
+    ws.mergeCells("B5:D5");
+    ws.mergeCells("F5:H5");
+    ws.mergeCells("B6:D6");
+    ws.mergeCells("F6:H6");
+
+    setInfoRow(3, "Project ID", String(projectId), "Manager", managerName);
+    setInfoRow(
+      4,
+      "Start date",
+      project.start_date || "",
+      "End date",
+      project.end_date || "",
+    );
+    setInfoRow(5, "Members", String(memberCount), "Preview", memberPreview);
+    setInfoRow(
+      6,
+      "Generated at",
+      generatedAt,
+      "Note",
+      "Điền theo mẫu, không đổi tên cột",
+    );
+    ws.getRow(5).height = 30;
+    ws.getRow(6).height = 22;
+
+    // Optional: project description row
+    ws.mergeCells("A7:H7");
+    ws.getCell("A7").value = project.description
+      ? `Mô tả: ${project.description}`
+      : "";
+    ws.getCell("A7").alignment = { vertical: "middle", wrapText: true };
+    ws.getCell("A7").fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFF8F8F8" },
+    };
+    ws.getRow(7).height = project.description ? 30 : 10;
+
+    // ===== Task table header (starts lower) =====
+    const tableHeaderRow = project.description ? 9 : 8;
+    const firstDataRow = tableHeaderRow + 1;
+    ws.views = [{ state: "frozen", ySplit: tableHeaderRow }];
+
+    const headerRow = ws.getRow(tableHeaderRow);
+    headerRow.values = columns.map((c) => c.header);
+    headerRow.height = 20;
+    headerRow.eachCell((cell) => {
+      cell.font = tableHeaderFont;
+      cell.alignment = { vertical: "middle", horizontal: "center" };
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: tableHeaderBg },
+      };
+      cell.border = borderThin;
+    });
 
     // Example row (optional)
-    ws.addRow({
-      ten: "Abc",
-      trang_thai: "BACKLOG",
-      mo_ta: "abc",
-      ngay_tao: "12/07/2025",
-      deadline: "12/07/2025",
-      nguoi_phu_trach: userChoices[0] || "",
-      nguoi_theo_doi: userChoices[1] || userChoices[0] || "",
-      do_uu_tien: "HIGHEST",
-    });
+    const exampleValues = [
+      "Abc",
+      "BACKLOG",
+      "abc",
+      "12/07/2025",
+      "12/07/2025",
+      userChoices[0] || "",
+      userChoices[1] || userChoices[0] || "",
+      "HIGHEST",
+    ];
+    const exRow = ws.getRow(firstDataRow);
+    exRow.values = exampleValues;
+    exRow.height = 18;
+
+    // Table styling for data rows (zebra + borders)
+    const zebra1 = "FFFFFFFF";
+    const zebra2 = "FFF2F6FF";
 
     const listSheet = wb.addWorksheet("Lists");
     listSheet.state = "veryHidden";
@@ -855,7 +1215,21 @@ exports.downloadImportTemplate = async (req, res) => {
     wb.definedNames.add(`Lists!$C$1:$C$${usersToWrite.length}`, "UserList");
 
     const maxRows = 500;
-    for (let r = 2; r <= maxRows + 1; r++) {
+    const lastDataRow = firstDataRow + maxRows - 1;
+    for (let r = firstDataRow; r <= lastDataRow; r++) {
+      const isEven = (r - firstDataRow) % 2 === 1;
+      const fillColor = isEven ? zebra2 : zebra1;
+      for (let c = 1; c <= columns.length; c++) {
+        const cell = ws.getCell(r, c);
+        cell.border = borderThin;
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: fillColor },
+        };
+        cell.alignment = { vertical: "top", wrapText: true };
+      }
+
       // Status (B)
       ws.getCell(`B${r}`).dataValidation = {
         type: "list",
@@ -897,6 +1271,31 @@ exports.downloadImportTemplate = async (req, res) => {
         error: "Vui lòng chọn Độ ưu tiên từ danh sách",
       };
     }
+
+    // Make columns align nicely
+    ws.getColumn(2).alignment = {
+      vertical: "top",
+      horizontal: "left",
+      wrapText: true,
+    };
+    ws.getColumn(3).alignment = { vertical: "middle", horizontal: "center" };
+    ws.getColumn(4).alignment = {
+      vertical: "top",
+      horizontal: "left",
+      wrapText: true,
+    };
+    ws.getColumn(5).alignment = { vertical: "middle", horizontal: "center" };
+    ws.getColumn(6).alignment = { vertical: "middle", horizontal: "center" };
+    ws.getColumn(7).alignment = {
+      vertical: "middle",
+      horizontal: "left",
+      wrapText: true,
+    };
+    ws.getColumn(8).alignment = {
+      vertical: "middle",
+      horizontal: "left",
+      wrapText: true,
+    };
 
     res.setHeader(
       "Content-Type",

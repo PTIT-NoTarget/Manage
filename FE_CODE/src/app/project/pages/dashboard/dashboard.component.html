@@ -1,9 +1,18 @@
 <div class="p-[40px]">
   <p class="text-[#0EAF8F] font-medium text-[18px] !mb-[30px]">TỔNG QUAN</p>
   <div class="flex items-center mx-[-30px]">
-    <div *ngFor="let box of listBox"
-      class="relative w-1/5 border-[1px] border-[#D8D8D8] rounded-[8px] py-[16px] mb-[50px] mx-[30px]">
-      <div class="text-custom !mx-auto !left-0 !right-0 !w-fit">{{ box.title }}</div>
+    <div
+      *ngFor="let box of listBox"
+      class="relative w-1/5 rounded-[8px] py-[16px] mb-[50px] mx-[30px]"
+      [style.backgroundColor]="box.color || '#fff'"
+      [style.borderStyle]="'solid'"
+      [style.borderWidth.px]="1"
+      [style.borderColor]="box.color || '#D8D8D8'"
+      [style.borderRadius.px]="8"
+    >
+      <div class="text-custom !mx-auto !left-0 !right-0 !w-fit" [style.backgroundColor]="box.color || '#fff'">
+        {{ box.title }}
+      </div>
       <p class="text-center text-[#505050] text-[40px] font-black !mt-[15px] !mb-[13px]">{{ box.count }}</p>
       <!-- <p class="text-center !mb-[0px] font-semibold" [ngClass]="{
         'text-[#0EAF8F]': box.status === 1,
@@ -17,16 +26,32 @@
     </div>
   </div>
   <div class="flex justify-between">
-    <div class="relative w-2/5 border-[1px] border-[#D8D8D8] rounded-[8px] px-[36px] flex justify-center items-center">
-      <div class="text-custom">Tỉ lệ hoàn thành công việc</div>
-      <div class="w-[82%]">
+    <div class="relative w-2/5 border-[1px] border-[#D8D8D8] rounded-[8px] px-[36px] pt-[36px] pb-[20px]">
+      <div class="absolute top-[12px] left-[36px]">Tỉ lệ hoàn thành công việc</div>
+      <div class="w-[82%] mx-auto">
         <canvas id="pieChart"></canvas>
       </div>
     </div>
-    <div
-      class="relative w-3/5 border-[1px] border-[#D8D8D8] rounded-[8px] px-[36px] flex justify-center items-center ml-[25px]">
-      <div class="text-custom">Số lượng công việc (tuần)</div>
-      <div class="w-[82%]">
+    <div class="relative w-3/5 border-[1px] border-[#D8D8D8] rounded-[8px] px-[36px] pt-[36px] pb-[20px] ml-[25px]">
+      <div class="absolute top-[12px] left-[36px]">Số lượng công việc (tuần)</div>
+      <div class="absolute top-[10px] right-[36px] flex items-center gap-[10px]">
+        <button
+          type="button"
+          class="w-[26px] h-[26px] border border-[#D8D8D8] rounded-[6px] leading-[24px]"
+          (click)="prevWeek()"
+        >
+          ‹
+        </button>
+        <div class="text-[12px] text-[#505050] whitespace-nowrap">{{ weeklyRangeLabel }}</div>
+        <button
+          type="button"
+          class="w-[26px] h-[26px] border border-[#D8D8D8] rounded-[6px] leading-[24px]"
+          (click)="nextWeek()"
+        >
+          ›
+        </button>
+      </div>
+      <div class="w-[82%] mx-auto">
         <canvas id="lineChart"></canvas>
       </div>
     </div>

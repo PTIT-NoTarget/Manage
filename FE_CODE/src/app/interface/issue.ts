@@ -1,4 +1,3 @@
-
 import { JComment } from './comment';
 
 /* eslint-disable no-shadow */
@@ -26,6 +25,13 @@ export const IssueStatusDisplay = {
   [IssueStatus.TESTING]: 'Chờ duyệt',
   [IssueStatus.DONE]: 'Hoàn thành',
   [IssueStatus.REJECT]: 'Hủy bỏ'
+};
+
+export const IssueStatusColors = {
+  [IssueStatus.NEW]: '#99ffeb',
+  [IssueStatus.IN_PROGRESS]: '#0eaf8f',
+  [IssueStatus.DONE]: '#0e7964',
+  [IssueStatus.REJECT]: '#a30014'
 };
 
 export enum IssuePriority {

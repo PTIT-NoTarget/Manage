@@ -1,10 +1,18 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { IGetAllTaskReq, IGetAllTaskRes, TaskService } from '@tungle/core/apis/task.service';
-import { IssueStatus } from '@tungle/interface/issue';
+import {
+  IGetAllTaskReq,
+  IGetDashboardWeeklyRes,
+  TaskService
+} from '@tungle/core/apis/task.service';
+import { IssueStatus, IssueStatusColors } from '@tungle/interface/issue';
 import { AuthQuery } from '@tungle/project/auth/auth.query';
-import { Chart } from 'chart.js';
-import { NzModalService } from 'ng-zorro-antd/modal';
+import { Chart, registerables } from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
+import { format } from 'date-fns';
+
+Chart.register(...registerables);
+Chart.register(ChartDataLabels);
 
 @Component({
   selector: 'dashboard',
@@ -16,6 +24,8 @@ export class DashboardComponent implements OnInit {
   public chart2: any;
   public listBox: IListBox[] = [];
   dashboardData!: IDashboardData;
+  public weekOffset = 0;
+  public weeklyRangeLabel = '';
 
   constructor(
     private taskService: TaskService,
@@ -24,20 +34,52 @@ export class DashboardComponent implements OnInit {
   ) {}
 
   async ngOnInit() {
-    this.authQuery.user$
-      .subscribe((user) => {
-        if (user.role === 'user') {
-          this.router.navigate(['/main/projects/list']);
-        }
-      })
-      // .unsubscribe();
+    this.authQuery.user$.subscribe((user) => {
+      if (user.role === 'user') {
+        this.router.navigate(['/main/projects/list']);
+      }
+    });
+    // .unsubscribe();
 
     await this.getDashboardData();
     this.createPieChart();
     this.createLineChart();
   }
 
+  private getWeeklyCountsForLineChart(): number[] {
+    return [
+      this.dashboardData.weeklyData.mondayTasksCount,
+      this.dashboardData.weeklyData.tuesdayTasksCount,
+      this.dashboardData.weeklyData.wednesdayTasksCount,
+      this.dashboardData.weeklyData.thursdayTasksCount,
+      this.dashboardData.weeklyData.fridayTasksCount,
+      this.dashboardData.weeklyData.saturdayTasksCount
+    ];
+  }
+
+  private getLineSuggestedMax(): number {
+    const counts = this.getWeeklyCountsForLineChart();
+    const max = Math.max(0, ...counts.map((x) => Number(x) || 0));
+    return max + 3;
+  }
+
+  async prevWeek() {
+    this.weekOffset -= 1;
+    await this.loadWeeklyDashboardData();
+    this.updateLineChart();
+  }
+
+  async nextWeek() {
+    this.weekOffset += 1;
+    await this.loadWeeklyDashboardData();
+    this.updateLineChart();
+  }
+
   createPieChart() {
+    const pendingColor = IssueStatusColors[IssueStatus.NEW];
+    const doneColor = IssueStatusColors[IssueStatus.DONE];
+    const processColor = IssueStatusColors[IssueStatus.IN_PROGRESS];
+
     this.chart1 = new Chart('pieChart', {
       type: 'doughnut',
       data: {
@@ -49,8 +91,8 @@ export class DashboardComponent implements OnInit {
               this.dashboardData.doneTasksCount,
               this.dashboardData.processTasksCount
             ],
-            backgroundColor: ['#99FFEB', '#0E7964', '#0EAF8F'],
-            hoverBackgroundColor: ['#99FFEB', '#0E7964', '#0EAF8F']
+            backgroundColor: [pendingColor, doneColor, processColor],
+            hoverBackgroundColor: [pendingColor, doneColor, processColor]
           }
         ]
       },
@@ -59,19 +101,37 @@ export class DashboardComponent implements OnInit {
         cutout: '50%',
         plugins: {
           legend: {
-            position: 'right'
+            position: 'top',
+            align: 'start'
+          },
+          datalabels: {
+            color: '#ffffff',
+            font: {
+              weight: 'bold',
+              size: 18
+            },
+            formatter: (value, context) => {
+              const dataset = context.chart.data.datasets?.[0];
+              const data = (dataset?.data ?? []) as number[];
+              const total = data.reduce((sum, current) => sum + (Number(current) || 0), 0);
+              const numericValue = Number(value) || 0;
+              if (!total) return '0%';
+              const percentage = Math.round((numericValue / total) * 100);
+              return `${percentage}%`;
+            }
           },
           tooltip: {
             callbacks: {
               label: function (context) {
-                var dataset = context.dataset;
-                var label = dataset.label || '';
-                var value = dataset.data[context.dataIndex];
-                var total = dataset.data.reduce(function (previousValue, currentValue) {
-                  return previousValue + currentValue;
-                });
-                var percentage = Math.floor((value / total) * 100 + 0.5);
-                return label + ' ' + percentage + '%';
+                const label = context.label || '';
+                const dataset = context.dataset;
+                const value = Number(dataset.data[context.dataIndex]) || 0;
+                const total = (dataset.data as any[]).reduce(
+                  (sum, current) => sum + (Number(current) || 0),
+                  0
+                );
+                const percentage = total ? Math.round((value / total) * 100) : 0;
+                return `${label}: ${percentage}%`;
               }
             }
           }
@@ -81,6 +141,8 @@ export class DashboardComponent implements OnInit {
   }
 
   createLineChart() {
+    const processColor = IssueStatusColors[IssueStatus.IN_PROGRESS];
+
     this.chart2 = new Chart('lineChart', {
       type: 'line',
       data: {
@@ -88,22 +150,25 @@ export class DashboardComponent implements OnInit {
         datasets: [
           {
             // label: 'Số lượng công việc',
-            data: [
-              this.dashboardData.weeklyData.mondayTasksCount,
-              this.dashboardData.weeklyData.tuesdayTasksCount,
-              this.dashboardData.weeklyData.wednesdayTasksCount,
-              this.dashboardData.weeklyData.thursdayTasksCount,
-              this.dashboardData.weeklyData.fridayTasksCount,
-              this.dashboardData.weeklyData.saturdayTasksCount
-            ],
-            borderColor: '#0EAF8F',
+            data: this.getWeeklyCountsForLineChart(),
+            borderColor: processColor,
             fill: false,
-            pointBackgroundColor: '#0EAF8F'
+            pointBackgroundColor: processColor
           }
         ]
       },
       options: {
         responsive: true,
+        scales: {
+          y: {
+            beginAtZero: true,
+            min: 0,
+            suggestedMax: this.getLineSuggestedMax(),
+            ticks: {
+              precision: 0
+            }
+          }
+        },
         plugins: {
           legend: {
             display: false // Ẩn bỏ chú thích
@@ -111,6 +176,42 @@ export class DashboardComponent implements OnInit {
         }
       }
     });
+  }
+
+  private updateLineChart() {
+    if (!this.chart2) return;
+    this.chart2.data.datasets[0].data = this.getWeeklyCountsForLineChart();
+
+    const yScale = this.chart2.options?.scales?.y as any;
+    if (yScale) {
+      yScale.suggestedMax = this.getLineSuggestedMax();
+    }
+    this.chart2.update();
+  }
+
+  private setWeeklyRangeLabel(res: IGetDashboardWeeklyRes) {
+    const start = new Date(res.weekStart);
+    const end = new Date(res.weekEnd);
+    this.weeklyRangeLabel = `T2 ${format(start, 'dd/MM/yyyy')} - T7 ${format(end, 'dd/MM/yyyy')}`;
+  }
+
+  private async loadWeeklyDashboardData() {
+    const res = await this.taskService.getDashboardWeekly({
+      weekOffset: this.weekOffset,
+      project_id: null,
+      assigned_by: null
+    });
+
+    this.setWeeklyRangeLabel(res);
+
+    this.dashboardData.weeklyData = {
+      mondayTasksCount: res.days.Monday.count,
+      tuesdayTasksCount: res.days.Tuesday.count,
+      wednesdayTasksCount: res.days.Wednesday.count,
+      thursdayTasksCount: res.days.Thursday.count,
+      fridayTasksCount: res.days.Friday.count,
+      saturdayTasksCount: res.days.Saturday.count
+    };
   }
 
   async getDashboardData() {
@@ -137,9 +238,6 @@ export class DashboardComponent implements OnInit {
     const doneTasksCount = taskDatas.filter((item) => item.status === IssueStatus.DONE).length;
     const rejectTasksCount = taskDatas.filter((item) => item.status === IssueStatus.REJECT).length;
 
-    //weekly data
-    const weeklyData = this.groupByWeekday(res);
-
     // dashboard data
     this.dashboardData = {
       allTasksCount: allTasksCount,
@@ -148,113 +246,58 @@ export class DashboardComponent implements OnInit {
       doneTasksCount: doneTasksCount,
       rejectTasksCount: rejectTasksCount,
       weeklyData: {
-        mondayTasksCount: weeklyData['Monday'].length,
-        tuesdayTasksCount: weeklyData['Tuesday'].length,
-        wednesdayTasksCount: weeklyData['Wednesday'].length,
-        thursdayTasksCount: weeklyData['Thursday'].length,
-        fridayTasksCount: weeklyData['Friday'].length,
-        saturdayTasksCount: weeklyData['Saturday'].length
+        mondayTasksCount: 0,
+        tuesdayTasksCount: 0,
+        wednesdayTasksCount: 0,
+        thursdayTasksCount: 0,
+        fridayTasksCount: 0,
+        saturdayTasksCount: 0
       }
     };
+
+    await this.loadWeeklyDashboardData();
 
     this.listBox = [
       {
         title: 'Công việc',
         count: this.dashboardData.allTasksCount,
         percent: 10,
-        status: 1
+        status: 1,
+        color: '#ffffff'
       },
       {
         title: 'Chưa xử lý',
         count: this.dashboardData.pendingTasksCount,
         percent: 15,
-        status: 0
-      },
-      {
-        title: 'Đã xử lý',
-        count: this.dashboardData.doneTasksCount,
-        percent: 5,
-        status: 1
+        status: 0,
+        // BACKLOG + NEW: dùng màu NEW trong IssueStatusColors
+        color: IssueStatusColors[IssueStatus.NEW]
       },
       {
         title: 'Đang xử lý',
         count: this.dashboardData.processTasksCount,
         percent: 10,
-        status: 1
+        status: 1,
+        // IN_PROGRESS + TESTING: dùng màu IN_PROGRESS trong IssueStatusColors
+        color: IssueStatusColors[IssueStatus.IN_PROGRESS]
+      },
+      {
+        title: 'Đã xử lý',
+        count: this.dashboardData.doneTasksCount,
+        percent: 5,
+        status: 1,
+        color: IssueStatusColors[IssueStatus.DONE]
       },
       {
         title: 'Hủy bỏ',
         count: this.dashboardData.rejectTasksCount,
         percent: -2,
-        status: 0
+        status: 0,
+        color: IssueStatusColors[IssueStatus.REJECT]
       }
     ];
 
     console.log(this.dashboardData);
-  }
-
-  getStartAndEndOfWeek() {
-    const today = new Date();
-    const dayOfWeek = today.getUTCDay(); // Lấy ngày trong tuần (0: Chủ nhật, 1: Thứ 2,...)
-
-    // Tính ngày bắt đầu của tuần (Thứ 2)
-    const startOfWeek = new Date(today);
-    startOfWeek.setUTCDate(today.getUTCDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1)); // Nếu hôm nay Chủ nhật, trừ 6 ngày, nếu không trừ dayOfWeek - 1
-    startOfWeek.setUTCHours(0, 0, 0, 0); // Thiết lập giờ là 00:00:00
-
-    // Tính ngày kết thúc của tuần (Chủ nhật)
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setUTCDate(startOfWeek.getUTCDate() + 6); // Cộng thêm 6 ngày để đến Chủ nhật
-    endOfWeek.setUTCHours(23, 59, 59, 999); // Thiết lập giờ là 23:59:59
-
-    return { startOfWeek, endOfWeek };
-  }
-
-  groupByWeekday(arr: IGetAllTaskRes) {
-    const { startOfWeek, endOfWeek } = this.getStartAndEndOfWeek();
-
-    // Tạo các mảng rỗng cho mỗi ngày trong tuần (từ Thứ 2 đến Thứ 7)
-    const groupedIdTask: { [key: string]: number[] } = {
-      Monday: [],
-      Tuesday: [],
-      Wednesday: [],
-      Thursday: [],
-      Friday: [],
-      Saturday: []
-    };
-
-    arr.issues.forEach((item) => {
-      const date = new Date(item.createdAt); // Chuyển đổi chuỗi ngày ISO thành đối tượng Date
-      const dayOfWeek = date.getUTCDay(); // Lấy số ngày trong tuần (0: Chủ nhật, 1: Thứ 2,...)
-
-      // Lọc chỉ các ngày trong tuần hiện tại
-      if (date >= startOfWeek && date <= endOfWeek) {
-        switch (dayOfWeek) {
-          case 1:
-            groupedIdTask['Monday'].push(item.id);
-            break;
-          case 2:
-            groupedIdTask['Tuesday'].push(item.id);
-            break;
-          case 3:
-            groupedIdTask['Wednesday'].push(item.id);
-            break;
-          case 4:
-            groupedIdTask['Thursday'].push(item.id);
-            break;
-          case 5:
-            groupedIdTask['Friday'].push(item.id);
-            break;
-          case 6:
-            groupedIdTask['Saturday'].push(item.id);
-            break;
-          default:
-            break; // Không cần làm gì với Chủ nhật
-        }
-      }
-    });
-
-    return groupedIdTask;
   }
 }
 
@@ -279,4 +322,5 @@ interface IListBox {
   count: number;
   percent: number;
   status: number;
+  color?: string;
 }

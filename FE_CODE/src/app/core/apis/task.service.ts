@@ -32,6 +32,16 @@ export class TaskService {
       .toPromise();
   }
 
+  getDashboardWeekly(body: IGetDashboardWeeklyReq): Promise<IGetDashboardWeeklyRes> {
+    return this.requestService
+      .jsonRequestWithLoading<IGetDashboardWeeklyReq>(
+        'POST',
+        this.apiUrl + '/dashboard/weekly',
+        body
+      )
+      .toPromise();
+  }
+
   addATask(body: IAddATaskReq): Promise<IAddATaskRes> {
     return this.requestService
       .jsonRequestWithLoading<IAddATaskReq>('POST', this.apiUrl + '/add', body)
@@ -147,6 +157,25 @@ export interface IGetAllTaskRes {
     createdBy: number;
     storyPoint: number | null;
   }[];
+}
+
+export interface IGetDashboardWeeklyReq {
+  weekOffset: number;
+  project_id?: number | null;
+  assigned_by?: number | null;
+}
+
+export interface IGetDashboardWeeklyRes {
+  weekStart: string;
+  weekEnd: string;
+  days: {
+    Monday: { count: number; taskIds: number[] };
+    Tuesday: { count: number; taskIds: number[] };
+    Wednesday: { count: number; taskIds: number[] };
+    Thursday: { count: number; taskIds: number[] };
+    Friday: { count: number; taskIds: number[] };
+    Saturday: { count: number; taskIds: number[] };
+  };
 }
 
 export interface IAddATaskReq {

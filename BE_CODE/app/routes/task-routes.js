@@ -9,7 +9,7 @@ module.exports = function (app) {
     res.header(
       "Access-Control-Allow-Headers",
       "Authorization",
-      "Origin, Content-Type, Accept"
+      "Origin, Content-Type, Accept",
     );
     next();
   });
@@ -19,6 +19,9 @@ module.exports = function (app) {
 
   //get all task
   app.post(apiUrl + "/getAll", taskServices.getAllTasks);
+
+  // dashboard weekly (Mon->Sat) based on start_date/end_date
+  app.post(apiUrl + "/dashboard/weekly", taskServices.getDashboardWeekly);
 
   //get my tasks (by token userId)
   app.post(apiUrl + "/my", jwtAuth.verifyToken, taskServices.getMyTasks);
@@ -36,12 +39,12 @@ module.exports = function (app) {
   app.post(
     apiUrl + "/import",
     uploadExcel.single("file"),
-    taskServices.importTasksFromExcel
+    taskServices.importTasksFromExcel,
   );
 
   // download excel template for import
   app.get(
     apiUrl + "/import-template/:projectId",
-    taskServices.downloadImportTemplate
+    taskServices.downloadImportTemplate,
   );
 };
