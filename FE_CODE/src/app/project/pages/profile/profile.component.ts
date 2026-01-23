@@ -22,6 +22,24 @@ export class ProfileComponent {
   ngOnInit() {}
 
   /**
+   * Get user role label in Vietnamese
+   * @param role User role code
+   * @returns Vietnamese label for the role
+   */
+  getRoleLabel(role?: string): string {
+    switch (role) {
+      case 'admin':
+        return 'Quản trị viên';
+      case 'manager':
+        return 'Quản lý';
+      case 'user':
+        return 'Nhân viên';
+      default:
+        return 'Chưa xác định';
+    }
+  }
+
+  /**
    * Handle user avatar upload
    * @param $event Upload event containing image URL
    */
