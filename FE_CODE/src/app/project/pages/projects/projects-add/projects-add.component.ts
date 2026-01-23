@@ -1,5 +1,13 @@
 import { ChangeDetectorRef, Component, Input, OnInit, SimpleChanges } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup } from '@angular/forms';
+import {
+  AbstractControl,
+  FormBuilder,
+  FormControl,
+  FormGroup,
+  ValidationErrors,
+  ValidatorFn,
+  Validators
+} from '@angular/forms';
 import { untilDestroyed } from '@ngneat/until-destroy';
 import {
   IAddAProjectReq,
@@ -24,15 +32,34 @@ export class ProjectsAddComponent implements OnInit {
   @Input() users: JUser[] = [];
   @Input() modifyId: number | null = null;
 
-  form = new FormGroup({
-    name: new FormControl(),
-    description: new FormControl(),
-    start_date: new FormControl(),
-    end_date: new FormControl(),
-    status: new FormControl(),
-    manager_id: new FormControl(),
-    image_url: new FormControl()
-  });
+  private readonly dateRangeValidator: ValidatorFn = (
+    control: AbstractControl
+  ): ValidationErrors | null => {
+    const startValue = control.get('start_date')?.value;
+    const endValue = control.get('end_date')?.value;
+
+    const startDate = this.toDate(startValue);
+    const endDate = this.toDate(endValue);
+
+    if (!startDate || !endDate) {
+      return null;
+    }
+
+    return startDate.getTime() <= endDate.getTime() ? null : { dateRange: true };
+  };
+
+  form = new FormGroup(
+    {
+      name: new FormControl(),
+      description: new FormControl(),
+      start_date: new FormControl(null, [Validators.required]),
+      end_date: new FormControl(null, [Validators.required]),
+      status: new FormControl(),
+      manager_id: new FormControl(),
+      image_url: new FormControl()
+    },
+    { validators: [this.dateRangeValidator] }
+  );
   selectedUser: JUser | undefined;
 
   get f() {
@@ -53,6 +80,12 @@ export class ProjectsAddComponent implements OnInit {
   }
 
   async addProject() {
+    this.form.markAllAsTouched();
+    if (this.form.invalid) {
+      this.notiService.error('Vui lòng kiểm tra lại thời gian dự án.');
+      return;
+    }
+
     const projectName = this.form.get('name')?.value;
 
     // Kiểm tra tên dự án đã tồn tại chưa
@@ -105,6 +138,12 @@ export class ProjectsAddComponent implements OnInit {
   }
 
   async updateProject() {
+    this.form.markAllAsTouched();
+    if (this.form.invalid) {
+      this.notiService.error('Vui lòng kiểm tra lại thời gian dự án.');
+      return;
+    }
+
     const projectName = this.form.get('name')?.value;
 
     // Kiểm tra tên dự án đã tồn tại chưa (trừ chính nó)
@@ -165,5 +204,18 @@ export class ProjectsAddComponent implements OnInit {
 
   getMemberUser(userId: number): JUser {
     return this.users.find((user) => user.id === userId)!;
+  }
+
+  private toDate(value: unknown): Date | null {
+    if (!value) {
+      return null;
+    }
+
+    if (value instanceof Date) {
+      return isNaN(value.getTime()) ? null : value;
+    }
+
+    const parsed = new Date(value as any);
+    return isNaN(parsed.getTime()) ? null : parsed;
   }
 }

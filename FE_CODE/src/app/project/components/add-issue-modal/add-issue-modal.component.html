@@ -40,6 +40,14 @@
           <issue-end-date-select [control]="f?.end_date!"></issue-end-date-select>
         </div>
       </div>
+      <div *ngIf="issueForm?.touched" class="mt-1 text-sm text-red-500">
+        <ng-container *ngIf="issueForm?.hasError('dateRangeRequired')">
+          Vui lòng chọn đầy đủ ngày bắt đầu và ngày kết thúc.
+        </ng-container>
+        <ng-container *ngIf="issueForm?.hasError('dateRange')">
+          Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.
+        </ng-container>
+      </div>
     </div>
     <div class="mt-3 form-group">
       <label class="label"> Người phụ trách </label>

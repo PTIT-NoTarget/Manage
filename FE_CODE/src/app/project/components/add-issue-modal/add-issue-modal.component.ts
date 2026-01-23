@@ -1,5 +1,12 @@
 import { Component, Input, OnInit } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup } from '@angular/forms';
+import {
+  AbstractControl,
+  FormBuilder,
+  FormControl,
+  FormGroup,
+  ValidationErrors,
+  ValidatorFn
+} from '@angular/forms';
 import { IssueType, JIssue, IssueStatus, IssuePriority } from '@tungle/interface/issue';
 import { quillConfiguration } from '@tungle/project/config/editor';
 import { NzModalRef } from 'ng-zorro-antd/modal';
@@ -35,6 +42,26 @@ export class AddIssueModalComponent implements OnInit {
     return this.issueForm?.controls as { [key: string]: FormControl };
   }
 
+  private readonly dateRangeValidator: ValidatorFn = (
+    control: AbstractControl
+  ): ValidationErrors | null => {
+    const startValue = control.get('start_date')?.value;
+    const endValue = control.get('end_date')?.value;
+
+    const startDate = this.toDate(startValue);
+    const endDate = this.toDate(endValue);
+
+    if (!startDate && !endDate) {
+      return null;
+    }
+
+    if (!startDate || !endDate) {
+      return { dateRangeRequired: true };
+    }
+
+    return startDate.getTime() <= endDate.getTime() ? null : { dateRange: true };
+  };
+
   constructor(
     private _fb: FormBuilder,
     private _modalRef: NzModalRef,
@@ -60,19 +87,23 @@ export class AddIssueModalComponent implements OnInit {
   }
 
   initForm() {
-    this.issueForm = this._fb.group({
-      type: [IssueType.TASK],
-      priority: [IssuePriority.HIGHEST],
-      title: ['', NoWhitespaceValidator()],
-      description: [''],
-      start_date: [null],
-      end_date: [null],
-      reporterId: [''],
-      userIds: [[]]
-    });
+    this.issueForm = this._fb.group(
+      {
+        type: [IssueType.TASK],
+        priority: [IssuePriority.HIGHEST],
+        title: ['', NoWhitespaceValidator()],
+        description: [''],
+        start_date: [null],
+        end_date: [null],
+        reporterId: [''],
+        userIds: [[]]
+      },
+      { validators: [this.dateRangeValidator] }
+    );
   }
 
   async submitForm() {
+    this.issueForm.markAllAsTouched();
     if (this.issueForm.invalid) {
       return;
     }
@@ -127,5 +158,18 @@ export class AddIssueModalComponent implements OnInit {
 
   closeModal() {
     this._modalRef.close();
+  }
+
+  private toDate(value: unknown): Date | null {
+    if (!value) {
+      return null;
+    }
+
+    if (value instanceof Date) {
+      return isNaN(value.getTime()) ? null : value;
+    }
+
+    const parsed = new Date(value as any);
+    return isNaN(parsed.getTime()) ? null : parsed;
   }
 }

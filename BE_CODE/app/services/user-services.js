@@ -119,12 +119,24 @@ exports.updateUser = async (req, res) => {
     } else {
       req.body.password = user.password;
     }
-
     await user.update(req.body);
+
+    const updatedUser = await User.findByPk(req.body.id, {
+      attributes: { exclude: ["password"] },
+      include: [
+        {
+          model: Department,
+          as: "department",
+          attributes: ["id", "name", "description"],
+          required: false,
+        },
+      ],
+    });
 
     return res.status(200).json({
       success: true,
       message: "User info updated successfully",
+      user: updatedUser,
     });
   } catch (error) {
     return res.status(500).json({

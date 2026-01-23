@@ -14,8 +14,23 @@
     <p class="mb-1">Thời gian dự án</p>
     <div>
       <nz-date-picker formControlName="start_date" nzPlaceHolder="Ngày bắt đầu" class="mr-8"></nz-date-picker>
-      <nz-date-picker formControlName="end_date"></nz-date-picker>
+      <nz-date-picker formControlName="end_date" nzPlaceHolder="Ngày kết thúc"></nz-date-picker>
     </div>
+    <p
+      *ngIf="f['start_date']?.touched && f['start_date']?.hasError('required')"
+      class="mt-1 text-sm text-red-500"
+    >
+      Vui lòng chọn ngày bắt đầu.
+    </p>
+    <p *ngIf="f['end_date']?.touched && f['end_date']?.hasError('required')" class="mt-1 text-sm text-red-500">
+      Vui lòng chọn ngày kết thúc.
+    </p>
+    <p
+      *ngIf="form?.touched && form?.hasError('dateRange')"
+      class="mt-1 text-sm text-red-500"
+    >
+      Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.
+    </p>
   </div>
   <div class="my-2">
     <p class="mb-1">Quản lý phụ trách</p>

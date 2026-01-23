@@ -109,6 +109,7 @@ export interface IUpdateAUserReq {
 export interface IUpdateAUserRes {
   success: boolean;
   message: string;
+  user?: IGetAUserRes;
 }
 
 export interface IDeleteAUserReq {

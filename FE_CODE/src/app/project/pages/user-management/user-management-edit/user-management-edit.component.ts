@@ -6,6 +6,11 @@ import { UserService } from '@tungle/core/apis/user.service';
 import { NotiService } from '@tungle/core/services/noti.service';
 import { AuthService } from '@tungle/core/apis/auth.service';
 import {
+  AuthService as ProjectAuthService,
+  JwtPayloadWithId
+} from '@tungle/project/auth/auth.service';
+import { jwtDecode } from 'jwt-decode';
+import {
   GENDERS,
   POSITION_LEVEL,
   POSITIONS,
@@ -54,7 +59,8 @@ export class UserManagementEditComponent implements OnInit {
     private authService: AuthService,
     private notiService: NotiService,
     private userService: UserService,
-    private commonUserService: CommonUserService
+    private commonUserService: CommonUserService,
+    private projectAuthService: ProjectAuthService
   ) {}
 
   async ngOnInit() {
@@ -111,6 +117,15 @@ export class UserManagementEditComponent implements OnInit {
       .updateAUser(this.form.getRawValue())
       .then(() => {
         this.notiService.success();
+
+        const accessToken = localStorage.getItem('accessToken');
+        if (accessToken && this.userId) {
+          const currentUserId = jwtDecode<JwtPayloadWithId>(accessToken).id;
+          if (Number(this.userId) === Number(currentUserId)) {
+            this.projectAuthService.getUser();
+          }
+        }
+
         this.nzModalRef.close(true);
       })
       .catch((err) => {

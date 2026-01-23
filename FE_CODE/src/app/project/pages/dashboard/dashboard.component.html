@@ -10,10 +10,19 @@
       [style.borderColor]="box.color || '#D8D8D8'"
       [style.borderRadius.px]="8"
     >
-      <div class="text-custom !mx-auto !left-0 !right-0 !w-fit" [style.backgroundColor]="box.color || '#fff'">
+      <div
+        class="text-custom !mx-auto !left-0 !right-0 !w-fit"
+        [style.backgroundColor]="box.color || '#fff'"
+        [style.color]="box.textColor || '#505050'"
+      >
         {{ box.title }}
       </div>
-      <p class="text-center text-[#505050] text-[40px] font-black !mt-[15px] !mb-[13px]">{{ box.count }}</p>
+      <p
+        class="text-center text-[40px] font-black !mt-[15px] !mb-[13px]"
+        [style.color]="box.textColor || '#505050'"
+      >
+        {{ box.count }}
+      </p>
       <!-- <p class="text-center !mb-[0px] font-semibold" [ngClass]="{
         'text-[#0EAF8F]': box.status === 1,
         'text-[#CF002A]': box.status === 0
@@ -22,7 +31,9 @@
         <i *ngIf="box.status === 0" class="fa-solid fa-arrow-trend-down"></i>
       </p>
       <p class="text-center text-[11px] font-normal !mb-[0px]">so với tháng trước</p> -->
-      <p class="text-center text-[11px] font-normal !mb-[0px]">công việc</p>
+      <p class="text-center text-[11px] font-normal !mb-[0px]" [style.color]="box.textColor || '#505050'">
+        công việc
+      </p>
     </div>
   </div>
   <div class="flex justify-between">

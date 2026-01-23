@@ -262,7 +262,8 @@ export class DashboardComponent implements OnInit {
         count: this.dashboardData.allTasksCount,
         percent: 10,
         status: 1,
-        color: '#ffffff'
+        color: '#ffffff',
+        textColor: '#000000'
       },
       {
         title: 'Chưa xử lý',
@@ -270,7 +271,8 @@ export class DashboardComponent implements OnInit {
         percent: 15,
         status: 0,
         // BACKLOG + NEW: dùng màu NEW trong IssueStatusColors
-        color: IssueStatusColors[IssueStatus.NEW]
+        color: IssueStatusColors[IssueStatus.NEW],
+        textColor: '#000000'
       },
       {
         title: 'Đang xử lý',
@@ -278,21 +280,24 @@ export class DashboardComponent implements OnInit {
         percent: 10,
         status: 1,
         // IN_PROGRESS + TESTING: dùng màu IN_PROGRESS trong IssueStatusColors
-        color: IssueStatusColors[IssueStatus.IN_PROGRESS]
+        color: IssueStatusColors[IssueStatus.IN_PROGRESS],
+        textColor: '#ffffff'
       },
       {
         title: 'Đã xử lý',
         count: this.dashboardData.doneTasksCount,
         percent: 5,
         status: 1,
-        color: IssueStatusColors[IssueStatus.DONE]
+        color: IssueStatusColors[IssueStatus.DONE],
+        textColor: '#ffffff'
       },
       {
         title: 'Hủy bỏ',
         count: this.dashboardData.rejectTasksCount,
         percent: -2,
         status: 0,
-        color: IssueStatusColors[IssueStatus.REJECT]
+        color: IssueStatusColors[IssueStatus.REJECT],
+        textColor: '#ffffff'
       }
     ];
 
@@ -322,4 +327,5 @@ interface IListBox {
   percent: number;
   status: number;
   color?: string;
+  textColor?: string;
 }
