@@ -71,6 +71,19 @@ export class ProjectService {
   }
 
   updateIssue(issue: JIssue) {
+    if (issue.startDate && issue.endDate) {
+      const start = new Date(issue.startDate);
+      const end = new Date(issue.endDate);
+      if (
+        !Number.isNaN(start.getTime()) &&
+        !Number.isNaN(end.getTime()) &&
+        start.getTime() > end.getTime()
+      ) {
+        this._notiService.warning('Deadline không được nhỏ hơn ngày bắt đầu');
+        return;
+      }
+    }
+
     combineLatest([this.authQuery.userId$, this.authQuery.role$])
       .pipe(take(1))
       .subscribe(([userId, role]) => {

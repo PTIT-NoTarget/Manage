@@ -4,6 +4,7 @@
   [ngModel]="selectedDate"
   (ngModelChange)="updateDate($event)"
   [nzDisabled]="readOnly"
+  [nzDisabledDate]="disabledDate"
   [nzFormat]="'dd/MM/yyyy'"
   [nzShowToday]="true"
   [nzAllowClear]="true"

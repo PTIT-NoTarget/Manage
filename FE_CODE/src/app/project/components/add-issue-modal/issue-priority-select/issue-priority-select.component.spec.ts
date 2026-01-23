@@ -13,4 +13,11 @@ describe('IssuePrioritySelectComponent', () => {
     expect(expectedIcon.icon).toEqual('arrow-down');
     expect(expectedIcon.color).toEqual('#2D8738');
   });
+
+  it('should map Medium priority to minus icon', () => {
+    const expectedIcon = component.getPriorityIcon(IssuePriority.MEDIUM);
+    expect(expectedIcon.value).toEqual('Medium');
+    expect(expectedIcon.icon).toEqual('minus');
+    expect(expectedIcon.color).toEqual('#E97F33');
+  });
 });

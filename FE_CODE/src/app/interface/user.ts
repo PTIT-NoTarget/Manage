@@ -8,6 +8,9 @@ export interface JUser {
   phoneNumber?: string;
   address?: string;
   position?: string;
+  position_1?: string | null;
+  position_level?: string | null;
+  start_date?: string | null;
   avatarUrl: string;
   role?: string;
   createdAt: string;

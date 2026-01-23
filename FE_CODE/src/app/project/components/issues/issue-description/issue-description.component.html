@@ -9,7 +9,13 @@
   </quill-editor>
 
   <div class="pt-3 flex items-center">
-    <j-button [isWorking]="isWorking" [className]="'btn-primary'" class="mr-2" (click)="save()">
+    <j-button
+      [isWorking]="isWorking"
+      [disabled]="isWorking"
+      [className]="'btn-primary'"
+      class="mr-2"
+      (click)="save()"
+    >
       Save</j-button
     >
     <j-button (click)="cancel()" [className]="'btn-empty'"> Cancel </j-button>

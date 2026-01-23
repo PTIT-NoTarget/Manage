@@ -1,6 +1,7 @@
 import { Component, Input, OnChanges } from '@angular/core';
 import { JIssue } from '@tungle/interface/issue';
 import { ProjectService } from '@tungle/project/state/project/project.service';
+import { NotiService } from '@tungle/core/services/noti.service';
 
 @Component({
   selector: 'issue-start-date',
@@ -24,7 +25,7 @@ export class IssueStartDateComponent implements OnChanges {
     }).format(this.selectedDate);
   }
 
-  constructor(private _projectService: ProjectService) {}
+  constructor(private _projectService: ProjectService, private _notiService: NotiService) {}
 
   ngOnChanges(): void {
     if (this.issue?.startDate) {
@@ -38,6 +39,17 @@ export class IssueStartDateComponent implements OnChanges {
     if (this.readOnly) {
       return;
     }
+
+    // Guard: start date must be <= end date (if end date exists)
+    if (date && this.issue?.endDate) {
+      const end = new Date(this.issue.endDate);
+      if (!Number.isNaN(end.getTime()) && date.getTime() > end.getTime()) {
+        this._notiService.warning('Ngày bắt đầu không được lớn hơn deadline');
+        this.selectedDate = this.issue?.startDate ? new Date(this.issue.startDate) : null;
+        return;
+      }
+    }
+
     this.selectedDate = date;
     const startDate = date ? date.toISOString() : null;
 

@@ -101,8 +101,8 @@ export class DashboardComponent implements OnInit {
         cutout: '50%',
         plugins: {
           legend: {
-            position: 'top',
-            align: 'start'
+            position: 'right',
+            align: 'center'
           },
           datalabels: {
             color: '#ffffff',
@@ -149,7 +149,6 @@ export class DashboardComponent implements OnInit {
         labels: ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'],
         datasets: [
           {
-            // label: 'Số lượng công việc',
             data: this.getWeeklyCountsForLineChart(),
             borderColor: processColor,
             fill: false,

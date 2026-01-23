@@ -13,7 +13,7 @@
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-6">
             <div class="relative">
-              <app-upload [mode]="1" [imgUrlInput]="user.avatarUrl" (upload)="updateUser($event)"></app-upload>
+              <app-upload [mode]="2" [imgUrlInput]="user.avatarUrl"></app-upload>
             </div>
             <div class="text-white">
               <h2 class="text-3xl font-bold mb-2">{{user.fullName}}</h2>
@@ -30,6 +30,21 @@
       <!-- Information Grid -->
       <div class="px-8 py-8">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Username -->
+          <div class="bg-gray-50 rounded-xl p-5 border border-gray-200 hover:shadow-md transition-shadow">
+            <div class="flex items-start">
+              <div class="bg-slate-100 rounded-lg p-3 mr-4">
+                <svg class="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+              </div>
+              <div class="flex-1">
+                <p class="text-sm text-gray-500 font-medium mb-1">Tên đăng nhập</p>
+                <p class="text-base text-gray-900 font-semibold break-all">{{user.username || 'Chưa cập nhật'}}</p>
+              </div>
+            </div>
+          </div>
+
           <!-- Email -->
           <div class="bg-gray-50 rounded-xl p-5 border border-gray-200 hover:shadow-md transition-shadow">
             <div class="flex items-start">
@@ -41,21 +56,6 @@
               <div class="flex-1">
                 <p class="text-sm text-gray-500 font-medium mb-1">Email</p>
                 <p class="text-base text-gray-900 font-semibold break-all">{{user.email || 'Chưa cập nhật'}}</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Phone Number -->
-          <div class="bg-gray-50 rounded-xl p-5 border border-gray-200 hover:shadow-md transition-shadow">
-            <div class="flex items-start">
-              <div class="bg-green-100 rounded-lg p-3 mr-4">
-                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
-                </svg>
-              </div>
-              <div class="flex-1">
-                <p class="text-sm text-gray-500 font-medium mb-1">Số điện thoại</p>
-                <p class="text-base text-gray-900 font-semibold">{{user.phoneNumber || 'Chưa cập nhật'}}</p>
               </div>
             </div>
           </div>
@@ -105,56 +105,50 @@
             </div>
           </div>
 
-          <!-- Role -->
+          <!-- Position (specialization) -->
           <div class="bg-gray-50 rounded-xl p-5 border border-gray-200 hover:shadow-md transition-shadow">
             <div class="flex items-start">
-              <div class="bg-indigo-100 rounded-lg p-3 mr-4">
-                <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+              <div class="bg-cyan-100 rounded-lg p-3 mr-4">
+                <svg class="w-6 h-6 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5l5 5v11a2 2 0 01-2 2z"></path>
                 </svg>
               </div>
               <div class="flex-1">
-                <p class="text-sm text-gray-500 font-medium mb-1">Vai trò</p>
-                <p class="text-base text-gray-900 font-semibold">
-                  <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium" 
-                        [ngClass]="{
-                          'bg-red-100 text-red-800': user.role === 'admin',
-                          'bg-blue-100 text-blue-800': user.role === 'manager',
-                          'bg-green-100 text-green-800': user.role === 'user'
-                        }">
-                    {{getRoleLabel(user.role)}}
-                  </span>
-                </p>
+                <p class="text-sm text-gray-500 font-medium mb-1">Vị trí</p>
+                <p class="text-base text-gray-900 font-semibold">{{user.position_1 || 'Chưa cập nhật'}}</p>
               </div>
             </div>
           </div>
 
-          <!-- Address -->
-          <div class="bg-gray-50 rounded-xl p-5 border border-gray-200 hover:shadow-md transition-shadow md:col-span-2">
+          <!-- Position level -->
+          <div class="bg-gray-50 rounded-xl p-5 border border-gray-200 hover:shadow-md transition-shadow">
             <div class="flex items-start">
-              <div class="bg-yellow-100 rounded-lg p-3 mr-4">
-                <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              <div class="bg-emerald-100 rounded-lg p-3 mr-4">
+                <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422A12.083 12.083 0 0121 13.5c0 4.418-4.03 8-9 8s-9-3.582-9-8c0-1.03.206-2.017.58-2.922L12 14z"></path>
                 </svg>
               </div>
               <div class="flex-1">
-                <p class="text-sm text-gray-500 font-medium mb-1">Địa chỉ</p>
-                <p class="text-base text-gray-900 font-semibold">{{user.address || 'Chưa cập nhật'}}</p>
+                <p class="text-sm text-gray-500 font-medium mb-1">Cấp bậc</p>
+                <p class="text-base text-gray-900 font-semibold">{{user.position_level || 'Chưa cập nhật'}}</p>
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- Footer with timestamps -->
-      <div class="bg-gray-50 px-8 py-4 border-t border-gray-200">
-        <div class="flex justify-between text-sm text-gray-500">
-          <div>
-            <span class="font-medium">Ngày tạo:</span> {{user.createdAt | date:'dd/MM/yyyy HH:mm'}}
-          </div>
-          <div>
-            <span class="font-medium">Cập nhật lần cuối:</span> {{user.updatedAt | date:'dd/MM/yyyy HH:mm'}}
+          <!-- Start date -->
+          <div class="bg-gray-50 rounded-xl p-5 border border-gray-200 hover:shadow-md transition-shadow">
+            <div class="flex items-start">
+              <div class="bg-teal-100 rounded-lg p-3 mr-4">
+                <svg class="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+              </div>
+              <div class="flex-1">
+                <p class="text-sm text-gray-500 font-medium mb-1">Ngày vào làm</p>
+                <p class="text-base text-gray-900 font-semibold">{{(user.start_date | date:'dd/MM/yyyy') || 'Chưa cập nhật'}}</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

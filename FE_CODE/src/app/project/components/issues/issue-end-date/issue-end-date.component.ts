@@ -1,6 +1,7 @@
 import { Component, Input, OnChanges } from '@angular/core';
 import { IssueStatus, JIssue } from '@tungle/interface/issue';
 import { ProjectService } from '@tungle/project/state/project/project.service';
+import { NotiService } from '@tungle/core/services/noti.service';
 
 @Component({
   selector: 'issue-end-date',
@@ -37,7 +38,25 @@ export class IssueEndDateComponent implements OnChanges {
     return this.isOverdue() ? '#CD1317' : 'inherit';
   }
 
-  constructor(private _projectService: ProjectService) {}
+  constructor(private _projectService: ProjectService, private _notiService: NotiService) {}
+
+  disabledDate = (current: Date): boolean => {
+    if (!this.issue?.startDate) {
+      return false;
+    }
+
+    const start = new Date(this.issue.startDate);
+    if (Number.isNaN(start.getTime())) {
+      return false;
+    }
+
+    // Disable dates strictly before the start date (by day)
+    const currentDate = new Date(current);
+    currentDate.setHours(0, 0, 0, 0);
+    const startDate = new Date(start);
+    startDate.setHours(0, 0, 0, 0);
+    return currentDate.getTime() < startDate.getTime();
+  };
 
   ngOnChanges(): void {
     if (this.issue?.endDate) {
@@ -51,6 +70,17 @@ export class IssueEndDateComponent implements OnChanges {
     if (this.readOnly) {
       return;
     }
+
+    // Guard: deadline must be >= start date (if start date exists)
+    if (date && this.issue?.startDate) {
+      const start = new Date(this.issue.startDate);
+      if (!Number.isNaN(start.getTime()) && date.getTime() < start.getTime()) {
+        this._notiService.warning('Deadline không được nhỏ hơn ngày bắt đầu');
+        this.selectedDate = this.issue?.endDate ? new Date(this.issue.endDate) : null;
+        return;
+      }
+    }
+
     this.selectedDate = date;
     const endDate = date ? date.toISOString() : null;
 
